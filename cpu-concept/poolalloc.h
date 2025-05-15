@@ -1,26 +1,20 @@
 #ifndef POOL_ALLOC
 #define POOL_ALLOC
 
-#define MEMORY_BLOCK_SIZE 64
-
-#include "stdbool.h"
-
 typedef struct BlockHeader {
-    bool free;
-    bool size;
-    struct BlockHeader *prev;
-    struct BlockHeader *next;
+    unsigned long size;
 } BlockHeader;
 
-typedef struct BlockFooter {
-    BlockHeader *header;
-} BlockFooter;
+// typedef struct BlockFooter {
+//     BlockHeader *header;
+// } BlockFooter;
 
 typedef struct MemoryBlock {
     BlockHeader header;
     char *data;
-    BlockFooter footer;
 } MemoryBlock;
+
+void poolinit();
 
 void *poolmalloc(unsigned long size);
 
