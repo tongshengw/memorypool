@@ -1,5 +1,6 @@
 #include "poolalloc.h"
 #include "stdio.h"
+#include <algorithm>
 #include <cassert>
 #include <deque>
 
@@ -34,7 +35,7 @@ void *poolmalloc(unsigned long size) {
 
     unsigned long oldBlockSize = freeList.front()->size;
     BlockHeader *newAllocatedHeader = freeList.front();
-    newAllocatedHeader->size = size;
+    newAllocatedHeader->size = std::max<unsigned long>(size, 8);
     freeList.pop_front();
     usedList.push_back(newAllocatedHeader);
 
