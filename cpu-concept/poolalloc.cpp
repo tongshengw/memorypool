@@ -1,10 +1,9 @@
 #include "poolalloc.h"
-#include "stdio.h"
 #include <algorithm>
 #include <cassert>
 #include <deque>
 
-#define MEM_POOL_SIZE 32
+#define MEM_POOL_SIZE 2048
 
 static char memPool[MEM_POOL_SIZE];
 
@@ -23,30 +22,30 @@ void poolinit() {
     // create a block that fills entire pool
     header->size = MEM_POOL_SIZE - sizeof(BlockHeader);
     freeList.push_back(header);
-    for (int i = 0; i < MEM_POOL_SIZE; i++) {
-        printf("%d ", memPool[i]);
-    }
 }
 
 void *poolmalloc(unsigned long size) {
+    // all pointer arithmetic is done on char* for clarity
     if (freeList.front()->size < size) {
         return nullptr;
     }
 
     unsigned long oldBlockSize = freeList.front()->size;
     BlockHeader *newAllocatedHeader = freeList.front();
-    newAllocatedHeader->size = std::max<unsigned long>(size, 8);
+    unsigned long sizeToAllocate = std::max<unsigned long>(size, 8);
+    newAllocatedHeader->size = sizeToAllocate;
     freeList.pop_front();
     usedList.push_back(newAllocatedHeader);
 
     BlockHeader *newFreeHeader =
-        (BlockHeader*) ((char*) newAllocatedHeader + (sizeof(BlockHeader) + size));
-    newFreeHeader->size = oldBlockSize - (size + sizeof(BlockHeader));
+        (BlockHeader*) ((char*) newAllocatedHeader + (sizeof(BlockHeader) + sizeToAllocate));
+    newFreeHeader->size = oldBlockSize - (sizeToAllocate + sizeof(BlockHeader));
     freeList.push_back(newFreeHeader);
 
     std::sort(freeList.begin(), freeList.end());
 
-    return newAllocatedHeader + (sizeof(BlockHeader));
+    void *res = (char*) newAllocatedHeader + (sizeof(BlockHeader));
+    return res;
 }
 
 void poolfree(void *ptr) {
