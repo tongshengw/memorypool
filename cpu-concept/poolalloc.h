@@ -1,18 +1,14 @@
 #ifndef POOL_ALLOC
 #define POOL_ALLOC
 
+#include "stdbool.h"
+
 typedef struct BlockHeader {
     unsigned long size;
+    bool free;
+    struct BlockHeader *prev;
+    struct BlockHeader *next;
 } BlockHeader;
-
-// typedef struct BlockFooter {
-//     BlockHeader *header;
-// } BlockFooter;
-
-typedef struct MemoryBlock {
-    BlockHeader header;
-    char *data;
-} MemoryBlock;
 
 void poolinit();
 
