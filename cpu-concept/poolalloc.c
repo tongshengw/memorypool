@@ -61,8 +61,12 @@ static void listRemove(BlockHeader *target) {
     BlockHeader *front = target->next;
     BlockHeader *back = target->prev;
 
-    front->prev = back;
-    back->next = front;
+    if (front != NULL) {
+        front->prev = back;
+    }
+    if (back != NULL) {
+        back->next = front;
+    }
 }
 
 static void listPrepend(BlockHeader **head, BlockHeader *added) {
@@ -78,33 +82,33 @@ static void listPrepend(BlockHeader **head, BlockHeader *added) {
     *head = added;
 }
 
-// NOTE: only use on lists with length greater than or equal 2
 // FIXME: double pointer head
-static void listSwapHeadSort(BlockHeader *head) {
-    assert(head->next->next != NULL);
-    BlockHeader *front = head->next->next;
-    BlockHeader *back = head->next;
-    unsigned long targetSize = head->size;
+static void listSwapHeadSort(BlockHeader **head) {
+    if ((*head)->next == NULL) {
+        return;
+    }
+    BlockHeader *front = (*head)->next->next;
+    BlockHeader *back = (*head)->next;
+    unsigned long targetSize = (*head)->size;
 
     while (front != NULL) {
         unsigned long frontSize = front->size;
         unsigned long backSize = back->size;
         if (frontSize > targetSize && targetSize > backSize) {
-            front->prev = head;
-            back->next = head;
-            BlockHeader *tmp = head->next;
-            head->prev = back;
-            head->next = front;
-            head = tmp;
+            front->prev = *head;
+            back->next = *head;
+            BlockHeader *tmp = (*head)->next;
+            (*head)->prev = back;
+            (*head)->next = front;
+            (*head) = tmp;
             return;
         }
     }
-
     // not found, insert at end
-    back->next = head;
-    BlockHeader *tmp = head;
-    head->prev = back;
-    head = tmp;
+    back->next = *head;
+    BlockHeader *tmp = *head;
+    (*head)->prev = back;
+    *head = tmp;
 }
 
 static unsigned long max(unsigned long a, unsigned long b) {
@@ -139,7 +143,7 @@ void *poolmalloc(unsigned long size) {
                         (sizeof(BlockHeader) + sizeToAllocate));
     newFreeHeader->size = oldBlockSize - (sizeToAllocate + sizeof(BlockHeader));
     listPrepend(&freeList, newFreeHeader);
-    listSwapHeadSort(freeList);
+    listSwapHeadSort(&freeList);
     void *res = (char *)newAllocatedHeader + (sizeof(BlockHeader));
 
     assertListValid(freeList);
