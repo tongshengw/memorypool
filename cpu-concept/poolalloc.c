@@ -107,7 +107,7 @@ static void listSwapHeadSort(BlockHeader **head) {
         front = front->next;
         back = back->next;
     }
-    // not found, insert at end
+    // not found, insert at end, if statement is for special case where list is length 2
     if (back->size > (*head)->size) {
         BlockHeader *tmp = (*head)->next;
         back->next = *head;
@@ -118,7 +118,7 @@ static void listSwapHeadSort(BlockHeader **head) {
     }
 }
 
-static unsigned long max(unsigned long a, unsigned long b) {
+static inline unsigned long max(unsigned long a, unsigned long b) {
     return a > b ? a : b;
 }
 
