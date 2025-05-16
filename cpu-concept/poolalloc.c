@@ -125,9 +125,10 @@ void poolinit() {
 void *poolmalloc(unsigned long size) {
     // all pointer arithmetic is done on char* for clarity
     // TODO: handle edge case where last alloc takes space of last header
-    if (freeList->size < size) {
+    if (freeList == NULL || freeList->size < size) {
         return NULL;
     }
+    
 
     int initFreeListSize = debugListSize(freeList);
     int initUsedListSize = debugListSize(usedList);
