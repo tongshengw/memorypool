@@ -56,19 +56,6 @@ static void assertFreeListSorted(BlockHeader *head) {
     }
 }
 
-// NOTE: input pointer to data, will automatically calculate BlockHeader pointer
-// address by subtracting sizeof(BlockHeader)
-// static BlockHeader *listLinearFind(BlockHeader *head, void *target) {
-//     BlockHeader *start = head;
-//     while (start != NULL) {
-//         if (start == target) {
-//             return start;
-//         }
-//         start = start->next;
-//     }
-//     assert(false);
-// }
-
 static void listRemove(BlockHeader **head, BlockHeader **target) {
     BlockHeader *front = (*target)->next;
     BlockHeader *back = (*target)->prev;
@@ -139,6 +126,7 @@ void poolinit() {
     BlockHeader *header = (BlockHeader *)memPool;
     // create a block that fills entire pool
     header->size = MEM_POOL_SIZE - sizeof(BlockHeader);
+    header->free = true;
     listPrepend(&freeList, header);
 }
 
@@ -158,10 +146,12 @@ void *poolmalloc(unsigned long size) {
     newAllocatedHeader->size = sizeToAllocate;
     listRemove(&freeList, &freeList);
     listPrepend(&usedList, newAllocatedHeader);
+    newAllocatedHeader->free = false;
     BlockHeader *newFreeHeader =
         (BlockHeader *)((char *)newAllocatedHeader +
                         (sizeof(BlockHeader) + sizeToAllocate));
     newFreeHeader->size = oldBlockSize - (sizeToAllocate + sizeof(BlockHeader));
+    newFreeHeader->free = true;
     listPrepend(&freeList, newFreeHeader);
     listSwapHeadSort(&freeList);
     void *res = (char *)newAllocatedHeader + (sizeof(BlockHeader));
@@ -183,6 +173,7 @@ void poolfree(void *ptr) {
 
     listRemove(&usedList, &freedHeader);
     listPrepend(&freeList, freedHeader);
+    freedHeader->free = true;
 
     listSwapHeadSort(&freeList);
 
