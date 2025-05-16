@@ -20,7 +20,20 @@ static int debugListSize(BlockHeader *head) {
     return size;
 }
 
+static void assertNoCycle(BlockHeader *head) {
+    if (head == NULL) {
+        return;
+    }
+    BlockHeader *slow = head;
+    BlockHeader *fast = head;
+    while (fast != NULL && fast->next != NULL) {
+        slow = slow->next;
+        fast = fast->next->next;
+        assert(slow != fast);
+    }
+}
 static void assertListValid(BlockHeader *head) {
+    assertNoCycle(head);
     BlockHeader *current = head;
     while (current != NULL) {
         if (current->next != NULL) {
@@ -37,7 +50,7 @@ static void assertListValid(BlockHeader *head) {
 
 static void assertFreeListSorted(BlockHeader *head) {
     while (head && head->next) {
-        assert(head->size <= head->next->size);
+        assert(head->size >= head->next->size);
         assert(head->next->prev == head);
         head = head->next;
     }
@@ -45,27 +58,28 @@ static void assertFreeListSorted(BlockHeader *head) {
 
 // NOTE: input pointer to data, will automatically calculate BlockHeader pointer
 // address by subtracting sizeof(BlockHeader)
-// FIXME: double pointer head
-static BlockHeader *listLinearFind(BlockHeader *head, void *target) {
-    BlockHeader *start = head;
-    while (start != NULL) {
-        if (start == target) {
-            return start;
-        }
-        start = start->next;
-    }
-    assert(false);
-}
+// static BlockHeader *listLinearFind(BlockHeader *head, void *target) {
+//     BlockHeader *start = head;
+//     while (start != NULL) {
+//         if (start == target) {
+//             return start;
+//         }
+//         start = start->next;
+//     }
+//     assert(false);
+// }
 
-static void listRemove(BlockHeader *target) {
-    BlockHeader *front = target->next;
-    BlockHeader *back = target->prev;
+static void listRemove(BlockHeader **head, BlockHeader **target) {
+    BlockHeader *front = (*target)->next;
+    BlockHeader *back = (*target)->prev;
 
     if (front != NULL) {
         front->prev = back;
     }
     if (back != NULL) {
         back->next = front;
+    } else {
+        *head = front;
     }
 }
 
@@ -82,7 +96,6 @@ static void listPrepend(BlockHeader **head, BlockHeader *added) {
     *head = added;
 }
 
-// FIXME: double pointer head
 static void listSwapHeadSort(BlockHeader **head) {
     if ((*head)->next == NULL) {
         return;
@@ -94,21 +107,28 @@ static void listSwapHeadSort(BlockHeader **head) {
     while (front != NULL) {
         unsigned long frontSize = front->size;
         unsigned long backSize = back->size;
-        if (frontSize > targetSize && targetSize > backSize) {
+        if (frontSize <= targetSize && targetSize <= backSize) {
             front->prev = *head;
             back->next = *head;
             BlockHeader *tmp = (*head)->next;
             (*head)->prev = back;
             (*head)->next = front;
             (*head) = tmp;
+            (*head)->prev = NULL;
             return;
         }
+        front = front->next;
+        back = back->next;
     }
     // not found, insert at end
-    back->next = *head;
-    BlockHeader *tmp = *head;
-    (*head)->prev = back;
-    *head = tmp;
+    if (back->size > (*head)->size) {
+        BlockHeader *tmp = (*head)->next;
+        back->next = *head;
+        (*head)->prev = back;
+        (*head)->next = NULL;
+        *head = tmp;
+        (*head)->prev = NULL;
+    }
 }
 
 static unsigned long max(unsigned long a, unsigned long b) {
@@ -128,7 +148,6 @@ void *poolmalloc(unsigned long size) {
     if (freeList == NULL || freeList->size < size) {
         return NULL;
     }
-    
 
     int initFreeListSize = debugListSize(freeList);
     int initUsedListSize = debugListSize(usedList);
@@ -137,7 +156,7 @@ void *poolmalloc(unsigned long size) {
     BlockHeader *newAllocatedHeader = freeList;
     unsigned long sizeToAllocate = max(size, 8);
     newAllocatedHeader->size = sizeToAllocate;
-    listRemove(freeList);
+    listRemove(&freeList, &freeList);
     listPrepend(&usedList, newAllocatedHeader);
     BlockHeader *newFreeHeader =
         (BlockHeader *)((char *)newAllocatedHeader +
@@ -161,9 +180,11 @@ void poolfree(void *ptr) {
 
     char *poolPtr = (char *)ptr;
     BlockHeader *freedHeader = (BlockHeader *)(poolPtr - sizeof(BlockHeader));
-    BlockHeader *freedUsedListPtr = listLinearFind(usedList, freedHeader);
-    listRemove(freedUsedListPtr);
+
+    listRemove(&usedList, &freedHeader);
     listPrepend(&freeList, freedHeader);
+
+    listSwapHeadSort(&freeList);
 
     assertListValid(freeList);
     assertListValid(usedList);
