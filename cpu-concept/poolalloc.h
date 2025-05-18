@@ -16,4 +16,6 @@ void *poolmalloc(unsigned long size);
 
 void poolfree(void *ptr);
 
+void printlayout();
+
 #endif

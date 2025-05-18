@@ -1,5 +1,7 @@
 #include "poolalloc.h"
+#include "math.h"
 #include "assert.h"
+#include "stdio.h"
 #include "stdlib.h"
 
 #define MEM_POOL_SIZE 2048
@@ -182,4 +184,69 @@ void poolfree(void *ptr) {
     assert(debugListSize(freeList) == initFreeListSize + 1);
     assert(debugListSize(usedList) == initUsedListSize - 1);
     assertFreeListSorted(freeList);
+}
+
+int BlockHeaderPtrLess(const void *a, const void *b) {
+    BlockHeader **aptr = (BlockHeader**) a;
+    BlockHeader **bptr = (BlockHeader**) b;
+    return *aptr - *bptr;
+}
+
+// array based
+/*
+free: | 1028 |       | 8 \
+used: |      | 8 | 8 |
+*/
+void printlayout() {
+    const int maxBlocks = 100;
+    BlockHeader const *headers[maxBlocks];
+    for (int i = 0; i < maxBlocks; i++) {
+        headers[i] = NULL;
+    }
+    
+    int numHeaders = 0;
+    BlockHeader *freeListTraverse = freeList;
+    BlockHeader *usedListTraverse = usedList;
+    while (freeListTraverse != NULL) {
+        headers[numHeaders] = freeListTraverse;
+        numHeaders++;
+        freeListTraverse = freeListTraverse->next;
+    }
+    while (usedListTraverse != NULL) {
+        headers[numHeaders] = usedListTraverse;
+        numHeaders++;
+        usedListTraverse = usedListTraverse->next;
+    }
+    
+    qsort(headers, numHeaders, sizeof(BlockHeader*), BlockHeaderPtrLess);
+    
+    printf("Memory Layout (total size %d), size not incl headers:\n", MEM_POOL_SIZE);
+    printf("free: |");
+    for (int i = 0; i < numHeaders; i++) {
+        if (headers[i]->free) {
+            printf(" %lu |", headers[i]->size);
+        } else {
+            int numberLen = (int) (log((double) headers[i]->size) / log((double) 10)) + 1;
+            printf(" ");
+            for (int i = 0; i < numberLen; i++) {
+                printf(" ");
+            }
+            printf(" |");
+        }
+    }
+    printf("\n");
+    printf("used: |");
+    for (int i = 0; i < numHeaders; i++) {
+        if (!headers[i]->free) {
+            printf(" %lu |", headers[i]->size);
+        } else {
+            int numberLen = (int) (log((double) headers[i]->size) / log((double) 10)) + 1;
+            printf(" ");
+            for (int i = 0; i < numberLen; i++) {
+                printf(" ");
+            }
+            printf(" |");
+        }
+    }
+    printf("\n");
 }
