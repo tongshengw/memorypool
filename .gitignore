@@ -1,9 +1,11 @@
 compile_commands.json
 
 .cache/
+.vscode/
 
 .clang-format
 
 *.o
 
 demo
+fuzzy-test
