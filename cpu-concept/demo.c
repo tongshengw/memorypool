@@ -1,7 +1,8 @@
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "./poolalloc.h"
-#include "assert.h"
-#include "stdio.h"
-#include "stdlib.h"
 
 void test_alloc_ints() {
     int *ptrs[14];
