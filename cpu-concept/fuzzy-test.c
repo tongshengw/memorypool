@@ -1,16 +1,25 @@
-#include "./poolalloc.h"
-#include "stdlib.h"
-#include "stdio.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include <assert.h>
 
-// #define MAX_TEST_SIZE 200
-// #define MAX_BYTES_PER_ALLOC 256
-// #define NUM_TESTS 1
+#include "./poolalloc.h"
 
-#define MAX_TEST_SIZE 8
+#define MAX_TEST_SIZE 40
 #define MAX_BYTES_PER_ALLOC 256
 #define NUM_TESTS 1
 
+/*
+This file generates random testing sequences for poolmalloc and poolfree.
+
+genRandomTestOperationArr() generates an array of valid TestOperations.
+
+executeTestOperationArr() executes the array of TestOperations.
+*/
+
+// TestOperation:
+// isAlloc - true for allocations
+// numBytes - number of bytes to allocate
+// corrospondingAlloc - index of allocate operation to free
 typedef struct TestOperation {
     bool isAlloc;
     unsigned long numBytes;
@@ -19,7 +28,8 @@ typedef struct TestOperation {
 
 void printOperationArr(TestOperation *ops, int N) {
     for (int i = 0; i < N; i++) {
-        printf("(alloc: %d, bytes %lu, corrosp: %d), ", ops[i].isAlloc, ops[i].numBytes, ops[i].corrospondingAlloc);
+        printf("(alloc: %d, bytes %lu, corrosp: %d), ", ops[i].isAlloc,
+               ops[i].numBytes, ops[i].corrospondingAlloc);
     }
     printf("\n");
 }
@@ -71,16 +81,6 @@ void genRandomTestOperationArr(TestOperation *ops, int N) {
     printOperationArr(ops, N);
 }
 
-int linearSearchArr(void **arr, int N, void *target) {
-    for (int i = 0; i < N; i++) {
-        if (arr[i] == target) {
-            return i;
-        }
-    }
-    return -1;
-}
-
-// NOTE: make sure every free corrosponds to a previous allocate when generating ops
 void executeTestOperationArr(TestOperation *ops, int N) {
     void *allocatedAddrs[MAX_TEST_SIZE];
     unsigned long bytesAllocated[MAX_TEST_SIZE];
@@ -96,35 +96,29 @@ void executeTestOperationArr(TestOperation *ops, int N) {
             allocatedAddrs[i] = poolmalloc(ops[i].numBytes);
             bytesAllocated[i] = ops[i].numBytes;
             assert(allocatedAddrs[i] != NULL);
-            printf("Allocated %lu bytes at (%p)\n", ops[i].numBytes, allocatedAddrs[i]);
+            printf("Allocated %lu bytes at (%p)\n", ops[i].numBytes,
+                   allocatedAddrs[i]);
         } else {
             void *freedPtr = allocatedAddrs[ops[i].corrospondingAlloc];
             poolfree(freedPtr);
             allocatedAddrs[ops[i].corrospondingAlloc] = NULL;
-            printf("Freed %lu bytes at (%p)\n", bytesAllocated[ops[i].corrospondingAlloc], freedPtr);
+            printf("Freed %lu bytes at (%p)\n",
+                   bytesAllocated[ops[i].corrospondingAlloc], freedPtr);
         }
         printlayout();
         printf("============================\n");
     }
-    
+
     for (int i = 0; i < N; i++) {
         if (allocatedAddrs[i] != NULL) {
             poolfree(allocatedAddrs[i]);
-        }    
+        }
     }
 }
 
 int main(void) {
     poolinit();
-    // TestOperation ops[3];
-    // ops[0].isAlloc = true;
-    // ops[0].numBytes = 100;
-    // ops[1].isAlloc = true;
-    // ops[1].numBytes = 2;
-    // ops[2].isAlloc = false;
-    // ops[2].corrospondingAlloc = 0;
-    // executeTestOperationArr(ops, 3);
-    
+
     for (int i = 0; i < NUM_TESTS; i++) {
         TestOperation *ops = malloc(MAX_TEST_SIZE * sizeof(TestOperation));
         printf("TEST %d:\n", i);
