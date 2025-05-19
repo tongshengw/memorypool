@@ -4,7 +4,9 @@
 #include "stdio.h"
 #include "stdlib.h"
 
-#define MEM_POOL_SIZE 2048
+#define MEM_POOL_SIZE 4096
+// NOTE: MAX_BLOCKS is for printlayout function, as a buffer is created statically, could change to dynamic
+#define MAX_BLOCKS 100
 
 static char memPool[MEM_POOL_SIZE];
 
@@ -198,9 +200,8 @@ free: | 1028 |       | 8 \
 used: |      | 8 | 8 |
 */
 void printlayout() {
-    const int maxBlocks = 100;
-    BlockHeader const *headers[maxBlocks];
-    for (int i = 0; i < maxBlocks; i++) {
+    BlockHeader const *headers[MAX_BLOCKS];
+    for (int i = 0; i < MAX_BLOCKS; i++) {
         headers[i] = NULL;
     }
     
@@ -218,6 +219,7 @@ void printlayout() {
         usedListTraverse = usedListTraverse->next;
     }
     
+    // sorts headers based on address as they are usually sorted by size or recency
     qsort(headers, numHeaders, sizeof(BlockHeader*), BlockHeaderPtrLess);
     
     printf("Memory Layout (total size %d), size not incl headers:\n", MEM_POOL_SIZE);
