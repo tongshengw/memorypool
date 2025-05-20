@@ -6,7 +6,7 @@
 
 #define MAX_TEST_SIZE 40
 #define MAX_BYTES_PER_ALLOC 256
-#define NUM_TESTS 1
+#define NUM_TESTS 2
 
 /*
 This file generates random testing sequences for poolmalloc and poolfree.
@@ -114,6 +114,7 @@ void executeTestOperationArr(TestOperation *ops, int N) {
             poolfree(allocatedAddrs[i]);
         }
     }
+    printlayout();
 }
 
 int main(void) {

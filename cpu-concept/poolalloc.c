@@ -5,7 +5,7 @@
 
 #include "poolalloc.h"
 
-#define MEM_POOL_SIZE 4096
+#define MEM_POOL_SIZE 8000
 // NOTE: MAX_BLOCKS is for printlayout function, as a buffer is created statically, could change to dynamic
 #define MAX_BLOCKS 100
 
@@ -23,6 +23,13 @@ static int debugListSize(BlockHeader *head) {
         current = current->next;
     }
     return size;
+}
+
+static void assertNoSizeOverflow(BlockHeader *head) {
+    while (head != NULL) {
+        assert(head->size < MEM_POOL_SIZE);
+        head = head->next;
+    }
 }
 
 static void assertNoCycle(BlockHeader *head) {
@@ -170,6 +177,7 @@ void *poolmalloc(unsigned long size) {
     listRemove(&freeList, &freeList);
     listPrepend(&usedList, newAllocatedHeader);
     newAllocatedHeader->free = false;
+    // TODO: the following line needs to be modified for memory alignment purposes (not sure how it works atm)
     BlockHeader *newFreeHeader =
         (BlockHeader *)((char *)newAllocatedHeader +
                         (sizeof(BlockHeader) + sizeToAllocate));
@@ -179,8 +187,11 @@ void *poolmalloc(unsigned long size) {
     listSwapHeadSort(&freeList);
     void *res = (char *)newAllocatedHeader + (sizeof(BlockHeader));
 
+
     assertListValid(freeList);
     assertListValid(usedList);
+    assertNoSizeOverflow(freeList);
+    assertNoSizeOverflow(usedList);
     assert(debugListSize(freeList) == initFreeListSize);
     assert(debugListSize(usedList) == initUsedListSize + 1);
     assertFreeListSorted(freeList);
@@ -190,6 +201,13 @@ void *poolmalloc(unsigned long size) {
 void poolfree(void *ptr) {
     int initFreeListSize = debugListSize(freeList);
     int initUsedListSize = debugListSize(usedList);
+    
+    if (usedList->next == NULL) {
+        freeList = NULL;
+        usedList = NULL;
+        poolinit();
+        return;
+    }
 
     char *poolPtr = (char *)ptr;
     BlockHeader *freedHeader = (BlockHeader *)(poolPtr - sizeof(BlockHeader));
@@ -199,6 +217,7 @@ void poolfree(void *ptr) {
     freedHeader->free = true;
 
     listSwapHeadSort(&freeList);
+
 
     assertListValid(freeList);
     assertListValid(usedList);
