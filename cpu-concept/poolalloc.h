@@ -18,4 +18,8 @@ void poolfree(void *ptr);
 
 void printlayout();
 
+int dataBytes(BlockHeader *head);
+
+int headerBytes(BlockHeader *head);
+
 #endif
