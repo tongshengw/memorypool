@@ -175,7 +175,9 @@ void poolinit() {
     memPool = malloc(MEM_POOL_SIZE);
     BlockHeader *header = (BlockHeader *)memPool;
     // create a block that fills entire pool
-    unsigned long dataSize = MEM_POOL_SIZE - sizeof(BlockHeader) - 16;
+    unsigned long dataSize =
+        MEM_POOL_SIZE - sizeof(BlockHeader) -
+        (sizeof(BlockFooter) + 16 - sizeof(BlockFooter) % 16);
     unsigned long dataSizeAligned = dataSize - dataSize % 16;
     header->size = dataSizeAligned;
     header->free = true;
