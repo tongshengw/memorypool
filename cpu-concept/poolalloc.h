@@ -4,10 +4,10 @@
 #include <stdbool.h>
 
 typedef struct BlockHeader {
-    unsigned long size;
-    bool free;
     struct BlockHeader *prev;
     struct BlockHeader *next;
+    unsigned long size;
+    bool free;
 } BlockHeader;
 
 void poolinit();

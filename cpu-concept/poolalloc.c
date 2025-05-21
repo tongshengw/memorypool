@@ -5,11 +5,24 @@
 
 #include "poolalloc.h"
 
-#define MEM_POOL_SIZE 8000
+#define MEM_POOL_SIZE 128
 // NOTE: MAX_BLOCKS is for printlayout function, as a buffer is created statically, could change to dynamic
 #define MAX_BLOCKS 100
 
-static char memPool[MEM_POOL_SIZE];
+// Alignment
+// For now, headers are 16 aligned
+// H = Header
+// P = Padding
+// D = Data
+// 0   16  32  48  64
+// |P|H|D|D|P|H| | | |
+// | | | | | | | | | |
+
+// blockheader type to ensure first one is aligned
+// TODO: when switching to cuda, remove malloc() in poolinit function
+// using malloc because malloc aligns to 16 on my system
+// static BlockHeader memPool[(MEM_POOL_SIZE/sizeof(BlockHeader))+1];
+char *memPool = NULL;
 
 static BlockHeader *freeList;
 static BlockHeader *usedList;
@@ -130,11 +143,12 @@ static void listSwapHeadSort(BlockHeader **head) {
     }
 }
 
-static inline unsigned long max(unsigned long a, unsigned long b) {
-    return a > b ? a : b;
-}
+// static inline unsigned long max(unsigned long a, unsigned long b) {
+//     return a > b ? a : b;
+// }
 
 void poolinit() {
+    memPool = malloc(MEM_POOL_SIZE);
     BlockHeader *header = (BlockHeader *)memPool;
     // create a block that fills entire pool
     header->size = MEM_POOL_SIZE - sizeof(BlockHeader);
@@ -172,7 +186,7 @@ void *poolmalloc(unsigned long size) {
 
     unsigned long oldBlockSize = freeList->size;
     BlockHeader *newAllocatedHeader = freeList;
-    unsigned long sizeToAllocate = max(size, 8);
+    unsigned long sizeToAllocate = size + (16 - size % 16);
     newAllocatedHeader->size = sizeToAllocate;
     listRemove(&freeList, &freeList);
     listPrepend(&usedList, newAllocatedHeader);

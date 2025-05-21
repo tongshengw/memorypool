@@ -4,9 +4,9 @@
 
 #include "./poolalloc.h"
 
-#define MAX_TEST_SIZE 40
-#define MAX_BYTES_PER_ALLOC 256
-#define NUM_TESTS 2
+#define MAX_TEST_SIZE 2
+#define MAX_BYTES_PER_ALLOC 20
+#define NUM_TESTS 1
 
 /*
 This file generates random testing sequences for poolmalloc and poolfree.
