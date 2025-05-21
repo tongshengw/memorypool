@@ -8,4 +8,4 @@ compile_commands.json
 *.o
 
 demo
-fuzzy-test
+fuzzy

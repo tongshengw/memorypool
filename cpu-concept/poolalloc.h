@@ -10,6 +10,10 @@ typedef struct BlockHeader {
     bool free;
 } BlockHeader;
 
+typedef struct BlockFooter {
+    BlockHeader *headerPtr;
+} BlockFooter;
+
 void poolinit();
 
 void *poolmalloc(unsigned long size);
@@ -17,6 +21,8 @@ void *poolmalloc(unsigned long size);
 void poolfree(void *ptr);
 
 void printlayout();
+
+void printbytes();
 
 int dataBytes(BlockHeader *head);
 

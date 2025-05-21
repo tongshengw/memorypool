@@ -1,8 +1,8 @@
 CC = gcc
 CFLAGS = -Wall -g3 -std=c99 -Werror
-TARGET = demo
+TARGETS = demo fuzzy
 
-fuzzy-test : fuzzy-test.o poolalloc.o
+fuzzy : fuzzy-test.o poolalloc.o
 	$(CC) -o fuzzy fuzzy-test.o poolalloc.o $(CFLAGS)
 
 demo : demo.o poolalloc.o
@@ -18,4 +18,4 @@ poolalloc.o : poolalloc.c
 	$(CC) -c poolalloc.c $(CFLAGS)
 
 clean:
-	rm -f *.o $(TARGET)
+	rm -f *.o $(TARGETS)

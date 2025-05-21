@@ -1,12 +1,13 @@
-#include <math.h>
 #include <assert.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "poolalloc.h"
 
-#define MEM_POOL_SIZE 128
-// NOTE: MAX_BLOCKS is for printlayout function, as a buffer is created statically, could change to dynamic
+#define MEM_POOL_SIZE 256
+// NOTE: MAX_BLOCKS is for printlayout function, as a buffer is created
+// statically, could change to dynamic
 #define MAX_BLOCKS 100
 
 // Alignment
@@ -31,7 +32,7 @@ static BlockHeader *usedList;
 static int debugListSize(BlockHeader *head) {
     int size = 0;
     BlockHeader *current = head;
-    while (current != NULL) {
+    while (current) {
         size++;
         current = current->next;
     }
@@ -39,7 +40,7 @@ static int debugListSize(BlockHeader *head) {
 }
 
 static void assertNoSizeOverflow(BlockHeader *head) {
-    while (head != NULL) {
+    while (head) {
         assert(head->size < MEM_POOL_SIZE);
         head = head->next;
     }
@@ -51,7 +52,7 @@ static void assertNoCycle(BlockHeader *head) {
     }
     BlockHeader *slow = head;
     BlockHeader *fast = head;
-    while (fast != NULL && fast->next != NULL) {
+    while (fast && fast->next) {
         slow = slow->next;
         fast = fast->next->next;
         assert(slow != fast);
@@ -60,15 +61,16 @@ static void assertNoCycle(BlockHeader *head) {
 static void assertListValid(BlockHeader *head) {
     assertNoCycle(head);
     BlockHeader *current = head;
-    while (current != NULL) {
-        if (current->next != NULL) {
+    while (current) {
+        if (current->next) {
             assert(current->next->prev == current);
         }
-        if (current->prev != NULL) {
+        if (current->prev) {
             assert(current->prev->next == current);
         } else {
             assert(current == head);
         }
+        assert(head->size % 16 == 0);
         current = current->next;
     }
 }
@@ -81,14 +83,24 @@ static void assertFreeListSorted(BlockHeader *head) {
     }
 }
 
+static void assertFootersValid(BlockHeader *head) {
+    while (head) {
+        char *tmp = (char *)head;
+        BlockFooter *footer =
+            (BlockFooter *)(tmp + sizeof(BlockHeader) + head->size);
+        assert(footer->headerPtr = head);
+        head = head->next;
+    }
+}
+
 static void listRemove(BlockHeader **head, BlockHeader **target) {
     BlockHeader *front = (*target)->next;
     BlockHeader *back = (*target)->prev;
 
-    if (front != NULL) {
+    if (front) {
         front->prev = back;
     }
-    if (back != NULL) {
+    if (back) {
         back->next = front;
     } else {
         *head = front;
@@ -116,7 +128,7 @@ static void listSwapHeadSort(BlockHeader **head) {
     BlockHeader *back = (*head)->next;
     unsigned long targetSize = (*head)->size;
 
-    while (front != NULL) {
+    while (front) {
         unsigned long frontSize = front->size;
         unsigned long backSize = back->size;
         if (frontSize <= targetSize && targetSize <= backSize) {
@@ -132,7 +144,8 @@ static void listSwapHeadSort(BlockHeader **head) {
         front = front->next;
         back = back->next;
     }
-    // not found, insert at end, if statement is for special case where list is length 2
+    // not found, insert at end, if statement is for special case where list is
+    // length 2
     if (back->size > (*head)->size) {
         BlockHeader *tmp = (*head)->next;
         back->next = *head;
@@ -151,14 +164,19 @@ void poolinit() {
     memPool = malloc(MEM_POOL_SIZE);
     BlockHeader *header = (BlockHeader *)memPool;
     // create a block that fills entire pool
-    header->size = MEM_POOL_SIZE - sizeof(BlockHeader);
+    unsigned long dataSize = MEM_POOL_SIZE - sizeof(BlockHeader) - 16;
+    unsigned long dataSizeAligned = dataSize - dataSize % 16;
+    header->size = dataSizeAligned;
     header->free = true;
+
+    BlockFooter *footer = (BlockFooter *)((char *)memPool + dataSizeAligned);
+    footer->headerPtr = header;
     listPrepend(&freeList, header);
 }
 
 int dataBytes(BlockHeader *head) {
     int tally = 0;
-    while (head != NULL) {
+    while (head) {
         tally += head->size;
         head = head->next;
     }
@@ -167,7 +185,7 @@ int dataBytes(BlockHeader *head) {
 
 int headerBytes(BlockHeader *head) {
     int tally = 0;
-    while (head != NULL) {
+    while (head) {
         tally += sizeof(BlockHeader);
         head = head->next;
     }
@@ -186,24 +204,35 @@ void *poolmalloc(unsigned long size) {
 
     unsigned long oldBlockSize = freeList->size;
     BlockHeader *newAllocatedHeader = freeList;
-    unsigned long sizeToAllocate = size + (16 - size % 16);
-    newAllocatedHeader->size = sizeToAllocate;
+    unsigned long dataSizeToAllocate = size + (16 - size % 16);
+    unsigned long totalSizeUnaligned = dataSizeToAllocate + sizeof(BlockFooter);
+    unsigned long totalSizeAligned =
+        totalSizeUnaligned + (16 - totalSizeUnaligned % 16);
+    newAllocatedHeader->size = dataSizeToAllocate;
+    BlockFooter *newAllocatedFooter =
+        (BlockFooter *)((char *)newAllocatedHeader + dataSizeToAllocate +
+                        sizeof(BlockHeader));
+    newAllocatedFooter->headerPtr = newAllocatedHeader;
     listRemove(&freeList, &freeList);
     listPrepend(&usedList, newAllocatedHeader);
     newAllocatedHeader->free = false;
-    // TODO: the following line needs to be modified for memory alignment purposes (not sure how it works atm)
     BlockHeader *newFreeHeader =
         (BlockHeader *)((char *)newAllocatedHeader +
-                        (sizeof(BlockHeader) + sizeToAllocate));
-    newFreeHeader->size = oldBlockSize - (sizeToAllocate + sizeof(BlockHeader));
+                        (sizeof(BlockHeader) + totalSizeAligned));
+    newFreeHeader->size =
+        oldBlockSize - (dataSizeToAllocate + sizeof(BlockHeader));
     newFreeHeader->free = true;
+    BlockFooter *newFreeFooter =
+        (BlockFooter *)((char *)newFreeHeader + newFreeHeader->size);
+    newFreeFooter->headerPtr = newFreeHeader;
     listPrepend(&freeList, newFreeHeader);
     listSwapHeadSort(&freeList);
     void *res = (char *)newAllocatedHeader + (sizeof(BlockHeader));
 
-
     assertListValid(freeList);
     assertListValid(usedList);
+    assertFootersValid(freeList);
+    assertFootersValid(usedList);
     assertNoSizeOverflow(freeList);
     assertNoSizeOverflow(usedList);
     assert(debugListSize(freeList) == initFreeListSize);
@@ -215,7 +244,7 @@ void *poolmalloc(unsigned long size) {
 void poolfree(void *ptr) {
     int initFreeListSize = debugListSize(freeList);
     int initUsedListSize = debugListSize(usedList);
-    
+
     if (usedList->next == NULL) {
         freeList = NULL;
         usedList = NULL;
@@ -232,17 +261,18 @@ void poolfree(void *ptr) {
 
     listSwapHeadSort(&freeList);
 
-
     assertListValid(freeList);
     assertListValid(usedList);
+    assertFootersValid(freeList);
+    assertFootersValid(usedList);
     assert(debugListSize(freeList) == initFreeListSize + 1);
     assert(debugListSize(usedList) == initUsedListSize - 1);
     assertFreeListSorted(freeList);
 }
 
 int BlockHeaderPtrLess(const void *a, const void *b) {
-    BlockHeader **aptr = (BlockHeader**) a;
-    BlockHeader **bptr = (BlockHeader**) b;
+    BlockHeader **aptr = (BlockHeader **)a;
+    BlockHeader **bptr = (BlockHeader **)b;
     return *aptr - *bptr;
 }
 
@@ -256,31 +286,34 @@ void printlayout() {
     for (int i = 0; i < MAX_BLOCKS; i++) {
         headers[i] = NULL;
     }
-    
+
     int numHeaders = 0;
     BlockHeader *freeListTraverse = freeList;
     BlockHeader *usedListTraverse = usedList;
-    while (freeListTraverse != NULL) {
+    while (freeListTraverse) {
         headers[numHeaders] = freeListTraverse;
         numHeaders++;
         freeListTraverse = freeListTraverse->next;
     }
-    while (usedListTraverse != NULL) {
+    while (usedListTraverse) {
         headers[numHeaders] = usedListTraverse;
         numHeaders++;
         usedListTraverse = usedListTraverse->next;
     }
-    
-    // sorts headers based on address as they are usually sorted by size or recency
-    qsort(headers, numHeaders, sizeof(BlockHeader*), BlockHeaderPtrLess);
-    
-    printf("Memory Layout (total size %d), size not incl headers:\n", MEM_POOL_SIZE);
+
+    // sorts headers based on address as they are usually sorted by size or
+    // recency
+    qsort(headers, numHeaders, sizeof(BlockHeader *), BlockHeaderPtrLess);
+
+    printf("Memory Layout (total size %d), size not incl headers:\n",
+           MEM_POOL_SIZE);
     printf("free: |");
     for (int i = 0; i < numHeaders; i++) {
         if (headers[i]->free) {
             printf(" %lu |", headers[i]->size);
         } else {
-            int numberLen = (int) (log((double) headers[i]->size) / log((double) 10)) + 1;
+            int numberLen =
+                (int)(log((double)headers[i]->size) / log((double)10)) + 1;
             printf(" ");
             for (int i = 0; i < numberLen; i++) {
                 printf(" ");
@@ -294,7 +327,8 @@ void printlayout() {
         if (!headers[i]->free) {
             printf(" %lu |", headers[i]->size);
         } else {
-            int numberLen = (int) (log((double) headers[i]->size) / log((double) 10)) + 1;
+            int numberLen =
+                (int)(log((double)headers[i]->size) / log((double)10)) + 1;
             printf(" ");
             for (int i = 0; i < numberLen; i++) {
                 printf(" ");
@@ -303,4 +337,16 @@ void printlayout() {
         }
     }
     printf("\n");
+}
+
+void printbytes() {
+    printf("\nBytes:\n");
+    for (size_t i = 0; i < MEM_POOL_SIZE; i++) {
+        printf("%02X", memPool[i]);
+        if (i < MEM_POOL_SIZE - 1) {
+            printf(" ");
+        }
+    }
+    printf("\n");
+    fflush(stdout);
 }
