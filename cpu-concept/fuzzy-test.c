@@ -4,7 +4,7 @@
 
 #include "./poolalloc.h"
 
-#define MAX_TEST_SIZE 2
+#define MAX_TEST_SIZE 20
 #define MAX_BYTES_PER_ALLOC 16
 #define NUM_TESTS 1
 

@@ -5,7 +5,7 @@
 
 #include "poolalloc.h"
 
-#define MEM_POOL_SIZE 256
+#define MEM_POOL_SIZE 8000
 // NOTE: MAX_BLOCKS is for printlayout function, as a buffer is created
 // statically, could change to dynamic
 #define MAX_BLOCKS 100
@@ -254,19 +254,50 @@ void poolfree(void *ptr) {
 
     char *poolPtr = (char *)ptr;
     BlockHeader *freedHeader = (BlockHeader *)(poolPtr - sizeof(BlockHeader));
-
     listRemove(&usedList, &freedHeader);
-    listPrepend(&freeList, freedHeader);
-    freedHeader->free = true;
 
-    listSwapHeadSort(&freeList);
+    // coalescing: current only coalescing forwards because need to linear
+    // search through freelist to find and remove any headers, coalescing
+    // forwards doesn't need to remove any headers
+
+    bool canCoalesce = false;
+    BlockHeader *prevBlockHeader = NULL;
+    BlockFooter *prevBlockFooter = NULL;
+    if ((char *)freedHeader == memPool) {
+        canCoalesce = false;
+    } else {
+        prevBlockFooter =
+            (BlockFooter *)((char *)freedHeader - (sizeof(BlockFooter) + 16 -
+                                                   sizeof(BlockFooter) % 16));
+        prevBlockHeader = prevBlockFooter->headerPtr;
+        canCoalesce = prevBlockHeader->free;
+    }
+
+    if (canCoalesce) {
+        // coalesce forwards
+        BlockFooter *freedFooter =
+            (BlockFooter *)((char *)freedHeader + freedHeader->size +
+                            sizeof(BlockHeader));
+        assert(freedFooter->headerPtr == freedHeader);
+        prevBlockHeader->size = (char *)freedFooter - (char *)prevBlockHeader;
+        freedFooter->headerPtr = prevBlockHeader;
+
+        assert(debugListSize(freeList) == initFreeListSize);
+        assert(debugListSize(usedList) == initUsedListSize - 1);
+    } else {
+        // no coalesce, add to freelist
+        listPrepend(&freeList, freedHeader);
+        freedHeader->free = true;
+        listSwapHeadSort(&freeList);
+
+        assert(debugListSize(freeList) == initFreeListSize + 1);
+        assert(debugListSize(usedList) == initUsedListSize - 1);
+    }
 
     assertListValid(freeList);
     assertListValid(usedList);
     assertFootersValid(freeList);
     assertFootersValid(usedList);
-    assert(debugListSize(freeList) == initFreeListSize + 1);
-    assert(debugListSize(usedList) == initUsedListSize - 1);
     assertFreeListSorted(freeList);
 }
 
