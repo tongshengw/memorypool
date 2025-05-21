@@ -88,14 +88,15 @@ static void assertFootersValid(BlockHeader *head) {
         char *tmp = (char *)head;
         BlockFooter *footer =
             (BlockFooter *)(tmp + sizeof(BlockHeader) + head->size);
-        assert(footer->headerPtr = head);
+        assert(footer->headerPtr == head);
         head = head->next;
     }
 }
 
-static void listRemove(BlockHeader **head, BlockHeader **target) {
-    BlockHeader *front = (*target)->next;
-    BlockHeader *back = (*target)->prev;
+// TODO: i think target doesnt need to be double pointer, come back to this
+static void listRemove(BlockHeader **head, BlockHeader *target) {
+    BlockHeader *front = target->next;
+    BlockHeader *back = target->prev;
 
     if (front) {
         front->prev = back;
@@ -156,6 +157,16 @@ static void listSwapHeadSort(BlockHeader **head) {
     }
 }
 
+static bool listLinearFind(BlockHeader *head, BlockHeader *target) {
+    while (head) {
+        if (head == target) {
+            return true;
+        }
+        head = head->next;
+    }
+    return false;
+}
+
 // static inline unsigned long max(unsigned long a, unsigned long b) {
 //     return a > b ? a : b;
 // }
@@ -213,7 +224,7 @@ void *poolmalloc(unsigned long size) {
         (BlockFooter *)((char *)newAllocatedHeader + dataSizeToAllocate +
                         sizeof(BlockHeader));
     newAllocatedFooter->headerPtr = newAllocatedHeader;
-    listRemove(&freeList, &freeList);
+    listRemove(&freeList, freeList);
     listPrepend(&usedList, newAllocatedHeader);
     newAllocatedHeader->free = false;
     BlockHeader *newFreeHeader =
@@ -223,7 +234,8 @@ void *poolmalloc(unsigned long size) {
         oldBlockSize - (dataSizeToAllocate + sizeof(BlockHeader));
     newFreeHeader->free = true;
     BlockFooter *newFreeFooter =
-        (BlockFooter *)((char *)newFreeHeader + newFreeHeader->size);
+        (BlockFooter *)((char *)newFreeHeader + newFreeHeader->size +
+                        sizeof(BlockHeader));
     newFreeFooter->headerPtr = newFreeHeader;
     listPrepend(&freeList, newFreeHeader);
     listSwapHeadSort(&freeList);
@@ -231,8 +243,8 @@ void *poolmalloc(unsigned long size) {
 
     assertListValid(freeList);
     assertListValid(usedList);
-    assertFootersValid(freeList);
     assertFootersValid(usedList);
+    assertFootersValid(freeList);
     assertNoSizeOverflow(freeList);
     assertNoSizeOverflow(usedList);
     assert(debugListSize(freeList) == initFreeListSize);
@@ -254,7 +266,7 @@ void poolfree(void *ptr) {
 
     char *poolPtr = (char *)ptr;
     BlockHeader *freedHeader = (BlockHeader *)(poolPtr - sizeof(BlockHeader));
-    listRemove(&usedList, &freedHeader);
+    listRemove(&usedList, freedHeader);
 
     // coalescing: current only coalescing forwards because need to linear
     // search through freelist to find and remove any headers, coalescing
@@ -266,10 +278,10 @@ void poolfree(void *ptr) {
     if ((char *)freedHeader == memPool) {
         canCoalesce = false;
     } else {
-        prevBlockFooter =
-            (BlockFooter *)((char *)freedHeader - (sizeof(BlockFooter) + 16 -
-                                                   sizeof(BlockFooter) % 16));
+        prevBlockFooter = (BlockFooter *)((char *)freedHeader - 16);
         prevBlockHeader = prevBlockFooter->headerPtr;
+        assert(listLinearFind(freeList, prevBlockHeader) ||
+               listLinearFind(usedList, prevBlockHeader));
         canCoalesce = prevBlockHeader->free;
     }
 
@@ -279,8 +291,18 @@ void poolfree(void *ptr) {
             (BlockFooter *)((char *)freedHeader + freedHeader->size +
                             sizeof(BlockHeader));
         assert(freedFooter->headerPtr == freedHeader);
-        prevBlockHeader->size = (char *)freedFooter - (char *)prevBlockHeader;
+        prevBlockHeader->size =
+            (char *)freedFooter - (char *)prevBlockHeader - sizeof(BlockHeader);
         freedFooter->headerPtr = prevBlockHeader;
+
+        assert(((BlockFooter *)((char *)prevBlockHeader +
+                                (sizeof(BlockHeader) + prevBlockHeader->size)))
+                   ->headerPtr == prevBlockHeader);
+
+        // TODO: change this workaround that is likely pretty slow
+        listRemove(&freeList, prevBlockHeader);
+        listPrepend(&freeList, prevBlockHeader);
+        listSwapHeadSort(&freeList);
 
         assert(debugListSize(freeList) == initFreeListSize);
         assert(debugListSize(usedList) == initUsedListSize - 1);
