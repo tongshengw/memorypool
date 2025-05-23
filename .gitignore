@@ -6,6 +6,7 @@ compile_commands.json
 .clang-format
 
 *.o
+*.out
 
 demo
 fuzzy
