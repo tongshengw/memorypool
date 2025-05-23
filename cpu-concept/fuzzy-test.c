@@ -1,12 +1,17 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include<getopt.h>
 
 #include "./poolalloc.h"
 
-#define MAX_TEST_SIZE 20
-#define MAX_BYTES_PER_ALLOC 16
-#define NUM_TESTS 1
+// #define MAX_TEST_SIZE 20
+// #define MAX_BYTES_PER_ALLOC 16
+// #define NUM_TESTS 1
+
+int MAX_TEST_SIZE = -1;
+int MAX_BYTES_PER_ALLOC = -1;
+int NUM_TESTS = -1;
 
 /*
 This file generates random testing sequences for poolmalloc and poolfree.
@@ -117,7 +122,32 @@ void executeTestOperationArr(TestOperation *ops, int N) {
     printlayout();
 }
 
-int main(void) {
+int main(int argc, char *argv[]) {
+    int opt;
+
+    if (argc < 7) {
+        printf("Usage: %s -t int -b int -n int\n", argv[0]);
+        fflush(stdout);
+        exit(1);
+    }
+    while ((opt = getopt(argc, argv, "t:b:n:")) != -1) {
+        switch (opt) {
+        case 't':
+            MAX_TEST_SIZE = atoi(optarg);
+            break;
+        case 'b':
+            MAX_BYTES_PER_ALLOC = atoi(optarg);
+            break;
+        case 'n':
+            NUM_TESTS = atoi(optarg);
+            break;
+        default:
+            printf("Usage: %s -t int -b int -n int\n", argv[0]);
+            fflush(stdout);
+            exit(1);
+        }
+    }
+
     poolinit();
 
     for (int i = 0; i < NUM_TESTS; i++) {

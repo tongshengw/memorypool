@@ -93,7 +93,6 @@ static void assertFootersValid(BlockHeader *head) {
     }
 }
 
-// TODO: i think target doesnt need to be double pointer, come back to this
 static void listRemove(BlockHeader **head, BlockHeader *target) {
     BlockHeader *front = target->next;
     BlockHeader *back = target->prev;
@@ -170,6 +169,12 @@ static bool listLinearFind(BlockHeader *head, BlockHeader *target) {
 // static inline unsigned long max(unsigned long a, unsigned long b) {
 //     return a > b ? a : b;
 // }
+// 
+
+static BlockFooter *getBlockFooter(BlockHeader *header) {
+    return (BlockFooter *)((char *)header + sizeof(BlockHeader) +
+                           header->size);
+}
 
 void poolinit() {
     memPool = malloc(MEM_POOL_SIZE);
@@ -222,9 +227,7 @@ void *poolmalloc(unsigned long size) {
     unsigned long totalSizeAligned =
         totalSizeUnaligned + (16 - totalSizeUnaligned % 16);
     newAllocatedHeader->size = dataSizeToAllocate;
-    BlockFooter *newAllocatedFooter =
-        (BlockFooter *)((char *)newAllocatedHeader + dataSizeToAllocate +
-                        sizeof(BlockHeader));
+    BlockFooter *newAllocatedFooter = getBlockFooter(newAllocatedHeader);
     newAllocatedFooter->headerPtr = newAllocatedHeader;
     listRemove(&freeList, freeList);
     listPrepend(&usedList, newAllocatedHeader);
@@ -235,9 +238,7 @@ void *poolmalloc(unsigned long size) {
     newFreeHeader->size =
         oldBlockSize - (dataSizeToAllocate + sizeof(BlockHeader));
     newFreeHeader->free = true;
-    BlockFooter *newFreeFooter =
-        (BlockFooter *)((char *)newFreeHeader + newFreeHeader->size +
-                        sizeof(BlockHeader));
+    BlockFooter *newFreeFooter = getBlockFooter(newFreeHeader);
     newFreeFooter->headerPtr = newFreeHeader;
     listPrepend(&freeList, newFreeHeader);
     listSwapHeadSort(&freeList);
