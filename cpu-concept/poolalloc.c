@@ -156,24 +156,23 @@ static void listSwapHeadSort(BlockHeader **head) {
     }
 }
 
-static bool listLinearFind(BlockHeader *head, BlockHeader *target) {
-    while (head) {
-        if (head == target) {
-            return true;
-        }
-        head = head->next;
-    }
-    return false;
-}
+// static bool listLinearFind(BlockHeader *head, BlockHeader *target) {
+//     while (head) {
+//         if (head == target) {
+//             return true;
+//         }
+//         head = head->next;
+//     }
+//     return false;
+// }
 
 // static inline unsigned long max(unsigned long a, unsigned long b) {
 //     return a > b ? a : b;
 // }
-// 
+//
 
 static BlockFooter *getBlockFooter(BlockHeader *header) {
-    return (BlockFooter *)((char *)header + sizeof(BlockHeader) +
-                           header->size);
+    return (BlockFooter *)((char *)header + sizeof(BlockHeader) + header->size);
 }
 
 void poolinit() {
@@ -208,6 +207,10 @@ int headerBytes(BlockHeader *head) {
         head = head->next;
     }
     return tally;
+}
+
+static int getFooterAlignedSize() {
+    return sizeof(BlockFooter) + (16 - sizeof(BlockFooter) % 16);
 }
 
 void *poolmalloc(unsigned long size) {
@@ -256,6 +259,29 @@ void *poolmalloc(unsigned long size) {
     return res;
 }
 
+BlockHeader *getNextBlockHeader(BlockHeader *header) {
+    int headerOffset = (char *)header - (char *)memPool;
+    if (headerOffset + sizeof(BlockHeader) + header->size +
+            getFooterAlignedSize() >= MEM_POOL_SIZE) {
+        return NULL;
+    }
+
+    BlockHeader *nextBlockHeader =
+        (BlockHeader *)((char *)header + sizeof(BlockHeader) + header->size +
+                        getFooterAlignedSize());
+    return nextBlockHeader;
+}
+
+BlockHeader *getPrevBlockHeader(BlockHeader *header) {
+    if ((void*)header == (void*)memPool) {
+        return NULL;
+    }
+    BlockFooter *prevBlockFooter =
+        (BlockFooter *)((char *)header - getFooterAlignedSize());
+    BlockHeader *prevBlockHeader = prevBlockFooter->headerPtr;
+    return prevBlockHeader;
+}
+
 void poolfree(void *ptr) {
     int initFreeListSize = debugListSize(freeList);
     int initUsedListSize = debugListSize(usedList);
@@ -271,24 +297,18 @@ void poolfree(void *ptr) {
     BlockHeader *freedHeader = (BlockHeader *)(poolPtr - sizeof(BlockHeader));
     listRemove(&usedList, freedHeader);
 
-    // coalescing: current only coalescing forwards because need to linear
-    // search through freelist to find and remove any headers, coalescing
-    // forwards doesn't need to remove any headers
-
-    bool canCoalesce = false;
-    BlockHeader *prevBlockHeader = NULL;
-    BlockFooter *prevBlockFooter = NULL;
-    if ((char *)freedHeader == memPool) {
-        canCoalesce = false;
+    bool canCoalesceForwards = false;
+    BlockHeader *prevBlockHeader = getPrevBlockHeader(freedHeader);
+    if (prevBlockHeader == NULL) {
+        canCoalesceForwards = false;
+    } else if (prevBlockHeader->free) {
+        canCoalesceForwards = true;
     } else {
-        prevBlockFooter = (BlockFooter *)((char *)freedHeader - 16);
-        prevBlockHeader = prevBlockFooter->headerPtr;
-        assert(listLinearFind(freeList, prevBlockHeader) ||
-               listLinearFind(usedList, prevBlockHeader));
-        canCoalesce = prevBlockHeader->free;
+        canCoalesceForwards = false;
     }
 
-    if (canCoalesce) {
+    BlockHeader *newFreeHeader = NULL;
+    if (canCoalesceForwards) {
         // coalesce forwards
         BlockFooter *freedFooter =
             (BlockFooter *)((char *)freedHeader + freedHeader->size +
@@ -302,7 +322,8 @@ void poolfree(void *ptr) {
                                 (sizeof(BlockHeader) + prevBlockHeader->size)))
                    ->headerPtr == prevBlockHeader);
 
-        // TODO: change this workaround that is likely pretty slow
+        newFreeHeader = prevBlockHeader;
+
         listRemove(&freeList, prevBlockHeader);
         listPrepend(&freeList, prevBlockHeader);
         listSwapHeadSort(&freeList);
@@ -314,8 +335,32 @@ void poolfree(void *ptr) {
         listPrepend(&freeList, freedHeader);
         freedHeader->free = true;
         listSwapHeadSort(&freeList);
+        newFreeHeader = freedHeader;
 
-        assert(debugListSize(freeList) == initFreeListSize + 1);
+        assert(debugListSize(usedList) == initUsedListSize - 1);
+    }
+    
+    BlockHeader *forwardsBlockHeader = getNextBlockHeader(newFreeHeader);
+    bool canCoalesceBackwards = false;
+    if (forwardsBlockHeader == NULL) {
+        canCoalesceBackwards = false;
+    } else if (forwardsBlockHeader->free) {
+        canCoalesceBackwards = true;
+    } else {
+        canCoalesceBackwards = false;
+    }
+    
+    if (canCoalesceBackwards) {
+        // coalesce backwards
+        listRemove(&freeList, forwardsBlockHeader);
+        BlockFooter *coalescedFooter = getBlockFooter(forwardsBlockHeader);
+        coalescedFooter->headerPtr = newFreeHeader;
+        newFreeHeader->size = (char*)coalescedFooter - (char*)newFreeHeader - sizeof(BlockHeader);
+
+        listRemove(&freeList, newFreeHeader);
+        listPrepend(&freeList, newFreeHeader);
+        listSwapHeadSort(&freeList);
+
         assert(debugListSize(usedList) == initUsedListSize - 1);
     }
 
