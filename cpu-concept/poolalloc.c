@@ -5,7 +5,7 @@
 
 #include "poolalloc.h"
 
-#define MEM_POOL_SIZE 8000
+#define MEM_POOL_SIZE 1200000
 // NOTE: MAX_BLOCKS is for printlayout function, as a buffer is created
 // statically, could change to dynamic
 #define MAX_BLOCKS 100
@@ -156,39 +156,8 @@ static void listSwapHeadSort(BlockHeader **head) {
     }
 }
 
-// static bool listLinearFind(BlockHeader *head, BlockHeader *target) {
-//     while (head) {
-//         if (head == target) {
-//             return true;
-//         }
-//         head = head->next;
-//     }
-//     return false;
-// }
-
-// static inline unsigned long max(unsigned long a, unsigned long b) {
-//     return a > b ? a : b;
-// }
-//
-
 static BlockFooter *getBlockFooter(BlockHeader *header) {
     return (BlockFooter *)((char *)header + sizeof(BlockHeader) + header->size);
-}
-
-void poolinit() {
-    memPool = malloc(MEM_POOL_SIZE);
-    BlockHeader *header = (BlockHeader *)memPool;
-    // create a block that fills entire pool
-    unsigned long dataSize =
-        MEM_POOL_SIZE - sizeof(BlockHeader) -
-        (sizeof(BlockFooter) + 16 - sizeof(BlockFooter) % 16);
-    unsigned long dataSizeAligned = dataSize - dataSize % 16;
-    header->size = dataSizeAligned;
-    header->free = true;
-
-    BlockFooter *footer = (BlockFooter *)((char *)memPool + dataSizeAligned);
-    footer->headerPtr = header;
-    listPrepend(&freeList, header);
 }
 
 int dataBytes(BlockHeader *head) {
@@ -211,6 +180,45 @@ int headerBytes(BlockHeader *head) {
 
 static int getFooterAlignedSize() {
     return sizeof(BlockFooter) + (16 - sizeof(BlockFooter) % 16);
+}
+
+static BlockHeader *getNextBlockHeader(BlockHeader *header) {
+    int headerOffset = (char *)header - (char *)memPool;
+    if (headerOffset + sizeof(BlockHeader) + header->size +
+            getFooterAlignedSize() >= MEM_POOL_SIZE) {
+        return NULL;
+    }
+
+    BlockHeader *nextBlockHeader =
+        (BlockHeader *)((char *)header + sizeof(BlockHeader) + header->size +
+                        getFooterAlignedSize());
+    return nextBlockHeader;
+}
+
+static BlockHeader *getPrevBlockHeader(BlockHeader *header) {
+    if ((void*)header == (void*)memPool) {
+        return NULL;
+    }
+    BlockFooter *prevBlockFooter =
+        (BlockFooter *)((char *)header - getFooterAlignedSize());
+    BlockHeader *prevBlockHeader = prevBlockFooter->headerPtr;
+    return prevBlockHeader;
+}
+
+void poolinit() {
+    memPool = malloc(MEM_POOL_SIZE);
+    BlockHeader *header = (BlockHeader *)memPool;
+    // create a block that fills entire pool
+    unsigned long dataSize =
+        MEM_POOL_SIZE - sizeof(BlockHeader) -
+        getFooterAlignedSize();
+    unsigned long dataSizeAligned = dataSize - dataSize % 16;
+    header->size = dataSizeAligned;
+    header->free = true;
+
+    BlockFooter *footer = getBlockFooter(header);
+    footer->headerPtr = header;
+    listPrepend(&freeList, header);
 }
 
 void *poolmalloc(unsigned long size) {
@@ -257,29 +265,6 @@ void *poolmalloc(unsigned long size) {
     assert(debugListSize(usedList) == initUsedListSize + 1);
     assertFreeListSorted(freeList);
     return res;
-}
-
-BlockHeader *getNextBlockHeader(BlockHeader *header) {
-    int headerOffset = (char *)header - (char *)memPool;
-    if (headerOffset + sizeof(BlockHeader) + header->size +
-            getFooterAlignedSize() >= MEM_POOL_SIZE) {
-        return NULL;
-    }
-
-    BlockHeader *nextBlockHeader =
-        (BlockHeader *)((char *)header + sizeof(BlockHeader) + header->size +
-                        getFooterAlignedSize());
-    return nextBlockHeader;
-}
-
-BlockHeader *getPrevBlockHeader(BlockHeader *header) {
-    if ((void*)header == (void*)memPool) {
-        return NULL;
-    }
-    BlockFooter *prevBlockFooter =
-        (BlockFooter *)((char *)header - getFooterAlignedSize());
-    BlockHeader *prevBlockHeader = prevBlockFooter->headerPtr;
-    return prevBlockHeader;
 }
 
 void poolfree(void *ptr) {
