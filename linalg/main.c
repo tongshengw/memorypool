@@ -240,8 +240,8 @@ void test_leastsq_kkt()
   for (int i = 0; i < n2; i++) {
     printf("%f\n", b[i]);
   }
-  printf("\n");
   printf("Number of iterations: %d\n", max_iter);
+  printf("\n");
 }
 
 int main(int argc, char *argv[])

@@ -16,7 +16,7 @@ run: $(OBJ)
 
 # Clean up build files
 clean:
-	rm -f *.o main
+	rm -f *.o run
 
 .PHONY: all clean
 
