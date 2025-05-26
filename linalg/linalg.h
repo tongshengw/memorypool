@@ -79,7 +79,7 @@ void lubksb(double *b, double const *a, int const *indx, int n);
 void luminv(double *y, double const *a, int const *indx, int n);
 
 /*! 
- * \brief solve least square problem A.x = b
+ * \brief solve least square problem min ||A.x - b||
  *
  * \param[in,out] b[0..n1-1] right-hand-side vector and output. Input dimension is n1, 
  *                output dimension is n2, requiring n1 >= n2

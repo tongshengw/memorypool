@@ -186,6 +186,54 @@ void test_leastsq()
   }
 }
 
+// test leastsq_kkt
+void test_leastsq_kkt()
+{
+  printf("Testing leastsq_kkt...\n");
+  double a[6] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0};
+  double c[4] = {1.0, 2.0, 3.0, 4.0};
+  double d[2] = {5.0, 6.0};
+  double b[3] = {7.0, 8.0, 9.0};
+  int n1 = 3;
+  int n2 = 2;
+  int n3 = 2;
+  int neq = 1;
+  
+  printf("Matrix A= \n");
+  for (int i = 0; i < n1; i++) {
+    for (int j = 0; j < n2; j++) {
+      printf("%f ", a[i * n2 + j]);
+    }
+    printf("\n");
+  }
+
+  printf("Vector B= \n");
+  for (int i = 0; i < n1; i++) {
+    printf("%f\n", b[i]);
+  }
+
+  printf("Matrix C= \n");
+  for (int i = 0; i < n3; i++) {
+    for (int j = 0; j < n2; j++) {
+      printf("%f ", c[i * n2 + j]);
+    }
+    printf("\n");
+  }
+  printf("neq = %d\n", neq);
+
+  printf("Vector D= \n");
+  for (int i = 0; i < n3; i++) {
+    printf("%f\n", d[i]);
+  }
+
+  leastsq_kkt(b, a, c, d, n1, n2, n3, neq, 100);
+  
+  printf("Constrained least squares solution: \n");
+  for (int i = 0; i < n2; i++) {
+    printf("%f\n", b[i]);
+  }
+}
+
 int main(int argc, char *argv[])
 {
   test_vvdot();
@@ -195,4 +243,5 @@ int main(int argc, char *argv[])
   test_lubksb();
   test_luminv();
   test_leastsq();
+  test_leastsq_kkt();
 }
