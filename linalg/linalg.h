@@ -22,6 +22,17 @@ double vvdot(double const *a, double const *b, int n);
 void mvdot(double *r, double const *m, double const *v, int n1, int n2);
 
 /*! 
+ * \brief matrix-matrix dot product: a.b
+ * \param[out] r[0..n1*n3-1] output matrix in row-major sequential storage
+ * \param[in] a[0..n1*n2-1] row-major sequential storage of n1 x n2 matrix
+ * \param[in] b[0..n2*n3-1] row-major sequential storage of n2 x n3 matrix
+ * \param[in] n1 number of rows in matrix a
+ * \param[in] n2 number of columns in matrix a (and rows in matrix b)
+ * \param[in] n3 number of columns in matrix b
+ */
+void mmdot(double *r, double const *a, double const *b, int n1, int n2, int n3);
+
+/*! 
  * \brief LU decomposition
  *
  * Given a row-major sequential storage of matrix a[0..n*n-1], 
@@ -68,7 +79,7 @@ void lubksb(double *b, double const *a, int const *indx, int n);
 void luminv(double *y, double const *a, int const *indx, int n);
 
 /*! 
- * \brief solve least square problem A.x = b
+ * \brief solve least square problem min ||A.x - b||
  *
  * \param[in,out] b[0..n1-1] right-hand-side vector and output. Input dimension is n1, 
  *                output dimension is n2, requiring n1 >= n2
@@ -77,6 +88,31 @@ void luminv(double *y, double const *a, int const *indx, int n);
  * \param[in] n2 number of columns in matrix
  */
 void leastsq(double *b, double const *a, int n1, int n2);
+
+/*!
+ * \brief solve constrained least square problem: min ||A.x - b||, s.t. C.x <= d
+ *
+ * This subroutine solves the constrained least square problem using the active set
+ * method based on the KKT conditions. The first `neq` rows of the constraint matrix `C`
+ * are treated as equality constraints, while the remaining rows are treated as
+ * inequality constraints.
+ *
+ * \param[in,out] b[0..n1-1] right-hand-side vector and output. Input dimension is n1,
+ *                output dimension is n2, requiring n1 >= n2
+ * \param[in] a[0..n1*n2-1] row-major input matrix, A
+ * \param[in] c[0..n3*n2-1] row-major constraint matrix, C
+ * \param[in] d[0..n3-1] right-hand-side constraint vector, d
+ * \param[in] n1 number of rows in matrix A
+ * \param[in] n2 number of columns in matrix A
+ * \param[in] n3 number of rows in matrix C
+ * \param[in] neq number of equality constraints, 0 <= neq <= n3
+ * \param[in,out] max_iter in: maximum number of iterations to perform, out: number of
+ *                iterations actually performed
+ * \return 0 on success, 1 on invalid input (e.g., neq < 0 or neq > n3),
+ *         2 on failure (max_iter reached without convergence).
+ */
+int leastsq_kkt(double *b, double const *a, double const* c, double const* d,
+                int n1, int n2, int n3, int neq, int *max_iter);
 
 #ifdef __cplusplus
 } /* extern "C" */
