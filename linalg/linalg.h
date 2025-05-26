@@ -106,12 +106,13 @@ void leastsq(double *b, double const *a, int n1, int n2);
  * \param[in] n2 number of columns in matrix A
  * \param[in] n3 number of rows in matrix C
  * \param[in] neq number of equality constraints, 0 <= neq <= n3
- * \param[in] max_iter maximum number of iterations to perform
+ * \param[in,out] max_iter in: maximum number of iterations to perform, out: number of
+ *                iterations actually performed
  * \return 0 on success, 1 on invalid input (e.g., neq < 0 or neq > n3),
  *         2 on failure (max_iter reached without convergence).
  */
 int leastsq_kkt(double *b, double const *a, double const* c, double const* d,
-                int n1, int n2, int n3, int neq, int max_iter);
+                int n1, int n2, int n3, int neq, int *max_iter);
 
 #ifdef __cplusplus
 } /* extern "C" */

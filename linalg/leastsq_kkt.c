@@ -5,11 +5,11 @@
 
 #define A(i, j) a[(i) * n2 + (j)]
 #define ATA(i, j) ata[(i) * n2 + (j)]
-#define AUG(i, j) aug[(i) * (n2 + n3) + (j)]
+#define AUG(i, j) aug[(i) * (n2 + nact) + (j)]
 #define C(i, j) c[(i) * n2 + (j)]
 
 void populate_aug(double *aug, double const* ata, double const* c,
-                  int n2, int n3, int const *ct_indx) {
+                  int n2, int nact, int const *ct_indx) {
   // populate A^T.A (upper left block)
   for (int i = 0; i < n2; ++i) {
     for (int j = 0; j < n2; ++j) {
@@ -18,7 +18,7 @@ void populate_aug(double *aug, double const* ata, double const* c,
   }
 
   // populate C (lower left block)
-  for (int i = 0; i < n3; ++i) {
+  for (int i = 0; i < nact; ++i) {
     for (int j = 0; j < n2; ++j) {
       AUG(n2 + i, j) = C(ct_indx[i], j);
     }
@@ -26,37 +26,37 @@ void populate_aug(double *aug, double const* ata, double const* c,
 
   // populate C^T (upper right block)
   for (int i = 0; i < n2; ++i) {
-    for (int j = 0; j < n3; ++j) {
+    for (int j = 0; j < nact; ++j) {
       AUG(i, n2 + j) = C(ct_indx[j], i);
     }
   }
 
   // zero (lower right block)
-  for (int i = 0; i < n3; ++i) {
-    for (int j = 0; j < n3; ++j) {
+  for (int i = 0; i < nact; ++i) {
+    for (int j = 0; j < nact; ++j) {
       AUG(n2 + i, n2 + j) = 0.0;
     }
   }
 }
 
 void populate_rhs(double *rhs, double const *atb, double const *d,
-                  int n2, int n3, int const *ct_indx) {
+                  int n2, int nact, int const *ct_indx) {
   // populate A^T.b (upper part)
   for (int i = 0; i < n2; ++i) {
     rhs[i] = atb[i];
   }
 
   // populate d (lower part)
-  for (int i = 0; i < n3; ++i) {
+  for (int i = 0; i < nact; ++i) {
     rhs[n2 + i] = d[ct_indx[i]];
   }
 }
 
 int leastsq_kkt(double *b, double const *a, double const* c, double const* d,
-                int n1, int n2, int n3, int neq, int max_iter) {
+                int n1, int n2, int n3, int neq, int *max_iter) {
   // check if n1 > 0, n2 > 0, n3 > 0
-  if (n1 <= 0 || n2 <= 0 || n3 <= 0) {
-    fprintf(stderr, "Error: n1, n2, and n3 must be positive integers.\n");
+  if (n1 <= 0 || n2 <= 0 || n3 <= 0 || n1 < n2) {
+    fprintf(stderr, "Error: n1, n2, and n3 must be positive integers and n1 >= n2.\n");
     return 1; // invalid input
   }
 
@@ -107,7 +107,19 @@ int leastsq_kkt(double *b, double const *a, double const* c, double const* d,
   int nactive = n3;
   int iter = 0;
 
-  while (iter++ < max_iter) {
+  while (iter++ < *max_iter) {
+    /*printf("============ ");
+    printf("nactive = %d, iter = %d\n", nactive, iter);
+    printf("CT indices = ");
+    for (int i = 0; i < nactive; ++i) {
+      printf("%d ", ct_indx[i]);
+    }
+    printf("| ");
+    for (int i = nactive; i < n3; ++i) {
+      printf("%d ", ct_indx[i]);
+    }
+    printf("\n");*/
+
     int nactive0 = nactive;
     populate_aug(aug, ata, c, n2, nactive, ct_indx);
     populate_rhs(rhs, atb, d, n2, nactive, ct_indx);
@@ -116,8 +128,13 @@ int leastsq_kkt(double *b, double const *a, double const* c, double const* d,
     ludcmp(aug, lu_indx, n2 + nactive);
     lubksb(rhs, aug, lu_indx, n2 + nactive);
 
-    // evaluate the constraints
-    for (int i = 0; i < nactive; ++i) {
+    /*printf("Solution vector:\n");
+    for (int i = 0; i < n2 + nactive; ++i) {
+      printf("%f\n", rhs[i]);
+    }*/
+
+    // evaluate the inactive constraints
+    for (int i = nactive; i < n3; ++i) {
       int k = ct_indx[i];
       eval[k] = 0.;
       for (int j = 0; j < n2; ++j) {
@@ -125,17 +142,30 @@ int leastsq_kkt(double *b, double const *a, double const* c, double const* d,
       }
     }
 
-    // remote inactive constraints (three-way swap)
+    /*printf("Evaluation of inactive constraints:\n");
+    for (int i = nactive; i < n3; ++i) {
+      printf("%d: %f\n", ct_indx[i], eval[ct_indx[i]]);
+    }*/
+
+    // remove inactive constraints (three-way swap)
+    //           mu < 0
+    //           |---------------->|
+    //           |<----|<----------|
+    //           f     :...m       :...l
+    //           |     :   |       :   |
+    // | * * * | * * * * | * * * * * | x
+    // |-------|---------|-----------|
+    // |  EQ   |   INEQ  | INACTIVE  |
     int first = neq;
-    int mid = nactive - 1;
-    int last = n3 - 1;
+    int mid = nactive;
+    int last = n3;
     while (first < mid) {
       if (rhs[n2 + first] < 0.0) { // inactive constraint
         // swap with the last active constraint
         int tmp = ct_indx[first];
-        ct_indx[first] = ct_indx[mid];
-        ct_indx[mid] = ct_indx[last];
-        ct_indx[last] = tmp;
+        ct_indx[first] = ct_indx[mid-1];
+        ct_indx[mid-1] = ct_indx[last-1];
+        ct_indx[last-1] = tmp;
         --last;
         --mid;
       } else {
@@ -143,19 +173,50 @@ int leastsq_kkt(double *b, double const *a, double const* c, double const* d,
       }
     }
 
+    /*printf("After removing inactive constraints:\n");
+    printf("CT indices = ");
+    for (int i = 0; i < first; ++i) {
+      printf("%d ", ct_indx[i]);
+    }
+    printf("| ");
+    for (int i = first; i < n3; ++i) {
+      printf("%d ", ct_indx[i]);
+    }
+    printf("\n");
+    printf("first = %d, mid = %d, last = %d\n", first, mid, last);*/
+
     // add back inactive constraints (two-way swap)
+    //                     C.x <= d
+    //                     |<----->|
+    //                     f       : l
+    //                     |       : |
+    // | * * * | * * * * | * * * * * x * |
+    // |-------|---------|---------------|
+    // |  EQ   |   INEQ  |   INACTIVE    |
     while (first < last) {
       int k = ct_indx[first];
       if (eval[k] > d[k]) {
         // add the inactive constraint back to the active set
-        int tmp = ct_indx[first];
-        ct_indx[first] = ct_indx[last];
-        ct_indx[last] = tmp;
-        --last;
-      } else {
         ++first;
+      } else {
+        int tmp = ct_indx[first];
+        ct_indx[first] = ct_indx[last-1];
+        ct_indx[last-1] = tmp;
+        --last;
       }
     }
+
+    /*printf("After adding back inactive constraints:\n");
+    printf("CT indices = ");
+    for (int i = 0; i < first; ++i) {
+      printf("%d ", ct_indx[i]);
+    }
+    printf("| ");
+    for (int i = first; i < n3; ++i) {
+      printf("%d ", ct_indx[i]);
+    }
+    printf("\n");
+    printf("first = %d, last = %d\n", first, last);*/
 
     nactive = first;
     if (nactive == nactive0) {
@@ -164,8 +225,9 @@ int leastsq_kkt(double *b, double const *a, double const* c, double const* d,
     }
   }
 
-  if (iter >= max_iter) {
-    return 2; // failure to converge
+  // copy to output vector b
+  for (int i = 0; i < n2; ++i) {
+    b[i] = rhs[i];
   }
 
   free(aug);
@@ -176,6 +238,12 @@ int leastsq_kkt(double *b, double const *a, double const* c, double const* d,
   free(ct_indx);
   free(lu_indx);
 
+  if (iter >= *max_iter) {
+    *max_iter = iter;
+    return 2; // failure to converge
+  }
+
+  *max_iter = iter;
   return 0; // success
 }
 

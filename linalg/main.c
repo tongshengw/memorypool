@@ -11,6 +11,7 @@ void test_vvdot()
   double result = vvdot(a, b, 3);
   printf("Dot product: %f\n", result);
   printf("Expected: 32.000000\n");
+  printf("\n");
 }
 
 // test mvdot
@@ -36,6 +37,7 @@ void test_mvdot()
   double r[2];
   mvdot(r, m, v, 2, 3);
   printf("Matrix-vector product: %f %f\n", r[0], r[1]);
+  printf("\n");
 }
 
 // test mmdot
@@ -74,6 +76,7 @@ void test_mmdot()
     }
     printf("\n");
   }
+  printf("\n");
 }
 
 // test ludcmp
@@ -96,6 +99,7 @@ void test_ludcmp()
   for (int i = 0; i < n; i++) {
     printf("%d ", indx[i]);
   }
+  printf("\n");
   printf("\n");
 }
 
@@ -127,6 +131,7 @@ void test_lubksb()
   for (int i = 0; i < n; i++) {
     printf("%f\n", b[i]);
   }
+  printf("\n");
 }
 
 // test luminv
@@ -155,6 +160,7 @@ void test_luminv()
     }
     printf("\n");
   }
+  printf("\n");
 }
 
 // test leastsq
@@ -184,6 +190,7 @@ void test_leastsq()
   for (int i = 0; i < n2; i++) {
     printf("%f\n", b[i]);
   }
+  printf("\n");
 }
 
 // test leastsq_kkt
@@ -191,8 +198,8 @@ void test_leastsq_kkt()
 {
   printf("Testing leastsq_kkt...\n");
   double a[6] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0};
-  double c[4] = {1.0, 2.0, 3.0, 4.0};
-  double d[2] = {5.0, 6.0};
+  double c[4] = {7.0, 8.0, 9.0, 10.0};
+  double d[2] = {11., 15.};
   double b[3] = {7.0, 8.0, 9.0};
   int n1 = 3;
   int n2 = 2;
@@ -226,12 +233,15 @@ void test_leastsq_kkt()
     printf("%f\n", d[i]);
   }
 
-  leastsq_kkt(b, a, c, d, n1, n2, n3, neq, 100);
+  int max_iter = 20;
+  leastsq_kkt(b, a, c, d, n1, n2, n3, neq, &max_iter);
   
   printf("Constrained least squares solution: \n");
   for (int i = 0; i < n2; i++) {
     printf("%f\n", b[i]);
   }
+  printf("\n");
+  printf("Number of iterations: %d\n", max_iter);
 }
 
 int main(int argc, char *argv[])
