@@ -5,16 +5,6 @@ extern "C" {
 #endif
 
 /*! 
- * \brief swap two rows of a matrix
- *
- * \param[in,out] a[0..n*n-1] row-major matrix
- * \param[in] ncol number of columns in the matrix
- * \param[in] i index of the first row to swap
- * \param[in] j index of the second row to swap
- */
-void swap_rows(double *a, int ncol, int i, int j);
-
-/*! 
  * \brief vector-vector dot product: a.b
  * \param[in] a[0..n-1] first vector
  * \param[in] b[0..n-1] second vector
@@ -30,6 +20,17 @@ double vvdot(double const *a, double const *b, int n);
  * \param[in] n2 number of columns in matrix
  */
 void mvdot(double *r, double const *m, double const *v, int n1, int n2);
+
+/*! 
+ * \brief matrix-matrix dot product: a.b
+ * \param[out] r[0..n1*n3-1] output matrix in row-major sequential storage
+ * \param[in] a[0..n1*n2-1] row-major sequential storage of n1 x n2 matrix
+ * \param[in] b[0..n2*n3-1] row-major sequential storage of n2 x n3 matrix
+ * \param[in] n1 number of rows in matrix a
+ * \param[in] n2 number of columns in matrix a (and rows in matrix b)
+ * \param[in] n3 number of columns in matrix b
+ */
+void mmdot(double *r, double const *a, double const *b, int n1, int n2, int n3);
 
 /*! 
  * \brief LU decomposition
@@ -106,10 +107,11 @@ void leastsq(double *b, double const *a, int n1, int n2);
  * \param[in] n3 number of rows in matrix C
  * \param[in] neq number of equality constraints, 0 <= neq <= n3
  * \param[in] max_iter maximum number of iterations to perform
- * \return 0 on success, 1 on failure (reached maximum iterations)
+ * \return 0 on success, 1 on invalid input (e.g., neq < 0 or neq > n3),
+ *         2 on failure (max_iter reached without convergence).
  */
 int leastsq_kkt(double *b, double const *a, double const* c, double const* d,
-                int n1, int n2, int n3, int neq, int max_iter = 20);
+                int n1, int n2, int n3, int neq, int max_iter);
 
 #ifdef __cplusplus
 } /* extern "C" */

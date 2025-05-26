@@ -38,6 +38,44 @@ void test_mvdot()
   printf("Matrix-vector product: %f %f\n", r[0], r[1]);
 }
 
+// test mmdot
+void test_mmdot()
+{
+  printf("Testing mmdot...\n");
+  double a[6] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0};
+  double b[6] = {7.0, 8.0, 9.0, 10.0, 11.0, 12.0};
+  double r[4];
+  int n1 = 2;
+  int n2 = 3;
+  int n3 = 2;
+
+  printf("Matrix A= \n");
+  for (int i = 0; i < n1; i++) {
+    for (int j = 0; j < n2; j++) {
+      printf("%f ", a[i * n2 + j]);
+    }
+    printf("\n");
+  }
+
+  printf("Matrix B= \n");
+  for (int i = 0; i < n2; i++) {
+    for (int j = 0; j < n3; j++) {
+      printf("%f ", b[i * n3 + j]);
+    }
+    printf("\n");
+  }
+
+  mmdot(r, a, b, n1, n2, n3);
+  
+  printf("Matrix product R= \n");
+  for (int i = 0; i < n1; i++) {
+    for (int j = 0; j < n3; j++) {
+      printf("%f ", r[i * n3 + j]);
+    }
+    printf("\n");
+  }
+}
+
 // test ludcmp
 void test_ludcmp()
 {
@@ -152,6 +190,7 @@ int main(int argc, char *argv[])
 {
   test_vvdot();
   test_mvdot();
+  test_mmdot();
   test_ludcmp();
   test_lubksb();
   test_luminv();

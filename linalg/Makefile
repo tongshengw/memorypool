@@ -1,7 +1,7 @@
 # Compiler and flags
 CC = gcc
 CFLAGS = -g3 -Wall
-OBJ = leastsq.o lubksb.o ludcmp.o luminv.o main.o mvdot.o vvdot.o
+OBJ = leastsq_kkt.o leastsq.o lubksb.o ludcmp.o luminv.o main.o mvdot.o vvdot.o mmdot.o
 
 # Default target
 all: run 
