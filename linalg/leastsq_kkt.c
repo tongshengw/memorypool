@@ -54,9 +54,9 @@ void populate_rhs(double *rhs, double const *atb, double const *d,
 
 int leastsq_kkt(double *b, double const *a, double const* c, double const* d,
                 int n1, int n2, int n3, int neq, int *max_iter) {
-  // check if n1 > 0, n2 > 0, n3 > 0
-  if (n1 <= 0 || n2 <= 0 || n3 <= 0 || n1 < n2) {
-    fprintf(stderr, "Error: n1, n2, and n3 must be positive integers and n1 >= n2.\n");
+  // check if n1 > 0, n2 > 0, n3 >= 0
+  if (n1 <= 0 || n2 <= 0 || n3 < 0 || n1 < n2) {
+    fprintf(stderr, "Error: n1 and n2 must be positive integers and n3 >= 0, n1 >= n2.\n");
     return 1; // invalid input
   }
 
@@ -108,7 +108,7 @@ int leastsq_kkt(double *b, double const *a, double const* c, double const* d,
   int iter = 0;
 
   while (iter++ < *max_iter) {
-    printf("============ ");
+    /*printf("============ ");
     printf("nactive = %d, iter = %d\n", nactive, iter);
     printf("CT indices = ");
     for (int i = 0; i < nactive; ++i) {
@@ -118,7 +118,7 @@ int leastsq_kkt(double *b, double const *a, double const* c, double const* d,
     for (int i = nactive; i < n3; ++i) {
       printf("%d ", ct_indx[i]);
     }
-    printf("\n");
+    printf("\n");*/
 
     int nactive0 = nactive;
     populate_aug(aug, ata, c, n2, nactive, ct_indx);
