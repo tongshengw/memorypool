@@ -104,11 +104,11 @@ int leastsq_kkt(double *b, double const *a, double const* c, double const* d,
     ct_indx[i] = i;
   }
 
-  int nactive = n3;
+  int nactive = neq;
   int iter = 0;
 
   while (iter++ < *max_iter) {
-    /*printf("============ ");
+    printf("============ ");
     printf("nactive = %d, iter = %d\n", nactive, iter);
     printf("CT indices = ");
     for (int i = 0; i < nactive; ++i) {
@@ -118,7 +118,7 @@ int leastsq_kkt(double *b, double const *a, double const* c, double const* d,
     for (int i = nactive; i < n3; ++i) {
       printf("%d ", ct_indx[i]);
     }
-    printf("\n");*/
+    printf("\n");
 
     int nactive0 = nactive;
     populate_aug(aug, ata, c, n2, nactive, ct_indx);
