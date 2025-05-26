@@ -5,6 +5,16 @@ extern "C" {
 #endif
 
 /*! 
+ * \brief swap two rows of a matrix
+ *
+ * \param[in,out] a[0..n*n-1] row-major matrix
+ * \param[in] ncol number of columns in the matrix
+ * \param[in] i index of the first row to swap
+ * \param[in] j index of the second row to swap
+ */
+void swap_rows(double *a, int ncol, int i, int j);
+
+/*! 
  * \brief vector-vector dot product: a.b
  * \param[in] a[0..n-1] first vector
  * \param[in] b[0..n-1] second vector
@@ -77,6 +87,29 @@ void luminv(double *y, double const *a, int const *indx, int n);
  * \param[in] n2 number of columns in matrix
  */
 void leastsq(double *b, double const *a, int n1, int n2);
+
+/*!
+ * \brief solve constrained least square problem: min ||A.x - b||, s.t. C.x <= d
+ *
+ * This subroutine solves the constrained least square problem using the active set
+ * method based on the KKT conditions. The first `neq` rows of the constraint matrix `C`
+ * are treated as equality constraints, while the remaining rows are treated as
+ * inequality constraints.
+ *
+ * \param[in,out] b[0..n1-1] right-hand-side vector and output. Input dimension is n1,
+ *                output dimension is n2, requiring n1 >= n2
+ * \param[in] a[0..n1*n2-1] row-major input matrix, A
+ * \param[in] c[0..n3*n2-1] row-major constraint matrix, C
+ * \param[in] d[0..n3-1] right-hand-side constraint vector, d
+ * \param[in] n1 number of rows in matrix A
+ * \param[in] n2 number of columns in matrix A
+ * \param[in] n3 number of rows in matrix C
+ * \param[in] neq number of equality constraints, 0 <= neq <= n3
+ * \param[in] max_iter maximum number of iterations to perform
+ * \return 0 on success, 1 on failure (reached maximum iterations)
+ */
+int leastsq_kkt(double *b, double const *a, double const* c, double const* d,
+                int n1, int n2, int n3, int neq, int max_iter = 20);
 
 #ifdef __cplusplus
 } /* extern "C" */
