@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <math.h>
 
 #include <linalg.h>
 #include "saturation_adjustment.h"
@@ -25,7 +26,7 @@ int saturation_adjustment(
   double *weight = (double*)malloc(nreaction * nspecies * sizeof(double));
 
   // U matrix
-  double *Umat = (double*)malloc(nreaction * nreaction * sizeof(double));
+  double *umat = (double*)malloc(nreaction * nreaction * sizeof(double));
 
   // right-hand-side vector
   double *rhs = (double*)malloc(nreaction * sizeof(double));
@@ -40,8 +41,10 @@ int saturation_adjustment(
   double *stoich_active = (double*)malloc(nspecies * nreaction * sizeof(double));
 
   int iter = 0;
-  while (iter++ < max_iter) {
+  int kkt_err = 0;
+  while (iter++ < *max_iter) {
     // temperature iteration
+    double temp0;
     do {
       double zh = 0.;
       double zc = 0.;
@@ -53,7 +56,7 @@ int saturation_adjustment(
         zc += enthalpy_ddT[i] * conc[i];
       }
 
-      double temp0 = *temp;
+      temp0 = *temp;
       (*temp) += (h0 - zh) / zc;
     } while (fabs(*temp - temp0) > 1e-4);
 
@@ -126,8 +129,9 @@ int saturation_adjustment(
       }
 
     // solve constrained optimization problem (KKT)
-    leastsq_kkt(rhs, umat, stoich_active, conc,
-                nactive, nactive, nspecies, *max_iter);
+    kkt_err = leastsq_kkt(rhs, umat, stoich_active, conc,
+                          nactive, nactive, nspecies, 0, max_iter);
+    if (kkt_err != 0) break;
 
     // rate -> conc
     for (int i = 0; i < nspecies; i++) {
@@ -143,13 +147,13 @@ int saturation_adjustment(
   free(logsvp_ddT);
   free(weight);
   free(rhs);
-  free(Umat);
+  free(umat);
   free(reaction_set);
   free(stoich_active);
 
   if (iter >= *max_iter) {
     return 2; // failure to converge
   } else {
-    return 0; // success
+    return kkt_err; // success or KKT error
   }
 } 
