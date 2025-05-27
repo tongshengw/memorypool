@@ -140,10 +140,13 @@ void test_ludcmp()
 void test_lubksb()
 {
   printf("Testing lubksb...\n");
-  double b[2] = {5.0, 11.0};
-  double a[4] = {1.0, 2.0, 3.0, 4.0};
-  int indx[2];
   int n = 2;
+  double *b = (double*)poolmalloc(n * sizeof(double));
+  double *a = (double*)poolmalloc(n * n * sizeof(double));
+  int *indx = (int*)poolmalloc(n * sizeof(int));
+
+  b[0] = 5.0; b[1] = 11.0;
+  a[0] = 1.0; a[1] = 2.0; a[2] = 3.0; a[3] = 4.0;
 
   printf("matrix A= \n");
   for (int i = 0; i < n; i++) {
@@ -165,16 +168,22 @@ void test_lubksb()
     printf("%f\n", b[i]);
   }
   printf("\n");
+
+  poolfree(b);
+  poolfree(a);
+  poolfree(indx);
 }
 
 // test luminv
 void test_luminv()
 {
   printf("Testing luminv...\n");
-  double a[4] = {1.0, 2.0, 3.0, 4.0};
-  int indx[2];
   int n = 2;
-  double y[4];
+  double *a = (double*)poolmalloc(n * n * sizeof(double));
+  int *indx = (int*)poolmalloc(n * sizeof(int));
+  double *y = (double*)poolmalloc(n * n * sizeof(double));
+
+  a[0] = 1.0; a[1] = 2.0; a[2] = 3.0; a[3] = 4.0;
 
   printf("matrix A= \n");
   for (int i = 0; i < n; i++) {
@@ -194,16 +203,25 @@ void test_luminv()
     printf("\n");
   }
   printf("\n");
+
+  poolfree(a);
+  poolfree(indx);
+  poolfree(y);
 }
 
 // test leastsq
 void test_leastsq()
 {
   printf("Testing leastsq...\n");
-  double a[6] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0};
-  double b[3] = {7.0, 8.0, 9.0};
   int n1 = 3;
   int n2 = 2;
+  double *a = (double*)poolmalloc(n1 * n2 * sizeof(double));
+  double *b = (double*)poolmalloc(n1 * sizeof(double));
+
+  a[0] = 1.0; a[1] = 2.0;
+  a[2] = 3.0; a[3] = 4.0;
+  a[4] = 5.0; a[5] = 6.0;
+  b[0] = 7.0; b[1] = 8.0; b[2] = 9.0;
 
   printf("Matrix A= \n");
   for (int i = 0; i < n1; i++) {
@@ -224,21 +242,32 @@ void test_leastsq()
     printf("%f\n", b[i]);
   }
   printf("\n");
+
+  poolfree(a);
+  poolfree(b);
 }
 
 // test leastsq_kkt
 void test_leastsq_kkt()
 {
   printf("Testing leastsq_kkt...\n");
-  double a[6] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0};
-  double c[4] = {7.0, 8.0, 9.0, 10.0};
-  double d[2] = {11., 15.};
-  double b[3] = {7.0, 8.0, 9.0};
   int n1 = 3;
   int n2 = 2;
   int n3 = 2;
   int neq = 1;
-  
+  double *a = (double*)poolmalloc(n1 * n2 * sizeof(double));
+  double *c = (double*)poolmalloc(n3 * n2 * sizeof(double));
+  double *d = (double*)poolmalloc(n3 * sizeof(double));
+  double *b = (double*)poolmalloc(n1 * sizeof(double));
+
+  a[0] = 1.0; a[1] = 2.0;
+  a[2] = 3.0; a[3] = 4.0;
+  a[4] = 5.0; a[5] = 6.0;
+  c[0] = 7.0; c[1] = 8.0;
+  c[2] = 9.0; c[3] = 10.0;
+  d[0] = 11.0; d[1] = 15.0;
+  b[0] = 7.0; b[1] = 8.0; b[2] = 9.0;
+
   printf("Matrix A= \n");
   for (int i = 0; i < n1; i++) {
     for (int j = 0; j < n2; j++) {
@@ -271,13 +300,18 @@ void test_leastsq_kkt()
   if (err != 0) {
     fprintf(stderr, "Error in leastsq_kkt: %d\n", err);
   }
-  
+
   printf("Constrained least squares solution: \n");
   for (int i = 0; i < n2; i++) {
     printf("%f\n", b[i]);
   }
   printf("Number of iterations: %d\n", max_iter);
   printf("\n");
+
+  poolfree(a);
+  poolfree(c);
+  poolfree(d);
+  poolfree(b);
 }
 
 void test_leastsq_kkt_large()
