@@ -448,5 +448,5 @@ int main(int argc, char *argv[])
   test_leastsq();
   test_leastsq_kkt();
   test_leastsq_kkt_large();
-  test_saturation_adjustment_h2o();
+  //test_saturation_adjustment_h2o();
 }

@@ -8,7 +8,7 @@ CUDAFLAGS = -g3 -Xcompiler -Wall
 
 # Sources
 HEADERS = $(wildcard linalg/*.h) $(wildcard phy/*.h)
-C_SOURCES = $(wildcard linalg/*.c) $(wildcard phy/*.c)
+C_SOURCES = $(wildcard linalg/*.c) $(wildcard phy/*.c) main.c
 CU_SOURCES = $(wildcard linalg/*.cu) $(wildcard phy/*.cu)
 C_OBJS = $(C_SOURCES:.c=.o)
 CU_OBJS = $(CU_SOURCES:.cu=.o)
@@ -20,7 +20,7 @@ all: $(TARGET)
 
 $(TARGET): $(C_OBJS) $(CU_OBJS)
 	#$(NVCC) $(CUDAFLAGS) -o $@ $^
-	$(CC) $(CFLAGS) main.c -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^
 
 %.o: %.c $(HEADERS)
 	$(CC) $(CFLAGS) -c -o $@ $<
