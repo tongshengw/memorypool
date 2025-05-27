@@ -12,7 +12,7 @@ void test_vol_leastsq_kkt_large() {
     int n1 = 184; // number of rows
     int n2 = 15;  // number of columns
 
-    double *a = (double *)malloc(n1 * n2 * sizeof(double));
+    double *a = (double *)poolmalloc(n1 * n2 * sizeof(double));
     FILE *file_a = fopen("X.txt", "r");
     if (file_a == NULL) {
         return;
@@ -25,7 +25,7 @@ void test_vol_leastsq_kkt_large() {
     }
     fclose(file_a);
 
-    double *b = (double *)malloc(n1 * sizeof(double));
+    double *b = (double *)poolmalloc(n1 * sizeof(double));
     FILE *file_b = fopen("Y.txt", "r");
     if (file_b == NULL) {
         return;
@@ -40,7 +40,7 @@ void test_vol_leastsq_kkt_large() {
 
     int neq = 1;       // number of equality constraints
     int n3 = neq + n2; // number of constraints
-    double *c = (double *)malloc(n3 * n2 * sizeof(double));
+    double *c = (double *)poolmalloc(n3 * n2 * sizeof(double));
 
     // first row: add up to 1.0
     for (int i = 0; i < n2; i++) {
@@ -58,7 +58,7 @@ void test_vol_leastsq_kkt_large() {
         }
     }
 
-    double *d = (double *)malloc(n3 * sizeof(double));
+    double *d = (double *)poolmalloc(n3 * sizeof(double));
     // first constraint: sum to 1.0
     d[0] = 1.0;
     // other constraints: set to 0.0
@@ -66,7 +66,7 @@ void test_vol_leastsq_kkt_large() {
         d[i] = 0.0;
     }
 
-    double *b0 = (double *)malloc(n1 * sizeof(double));
+    double *b0 = (double *)poolmalloc(n1 * sizeof(double));
     memcpy(b0, b, n1 * sizeof(double));
 
     double b1[15] = {0.0784, 0.1049, 0.0383, 0.1059, 0.1002,
@@ -88,18 +88,19 @@ void test_vol_leastsq_kkt_large() {
         cost += diff * diff;
         cost1 += diff1 * diff1;
     }
-    
+
     assert(cost > 389 && cost < 390);
     assert(cost1 > 397 && cost < 398);
 
-    free(a);
-    free(b);
-    free(c);
-    free(d);
-    free(b0);
+    poolfree(a);
+    poolfree(b);
+    poolfree(c);
+    poolfree(d);
+    poolfree(b0);
 }
 
 int main(int argc, char *argv[]) {
+    poolinit();
     for (int i = 0; i < NUM_TESTS; i++) {
         test_vol_leastsq_kkt_large();
     }

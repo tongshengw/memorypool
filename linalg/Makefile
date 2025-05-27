@@ -1,17 +1,19 @@
 # Compiler and flags
 CC = gcc
-CFLAGS = -g3 -Wall
+CFLAGS = -O3 -Wall
 OBJ = leastsq_kkt.o leastsq.o lubksb.o ludcmp.o luminv.o main.o mvdot.o vvdot.o mmdot.o
 POOLOBJ = leastsq_kkt.o leastsq.o lubksb.o ludcmp.o luminv.o pool-main.o mvdot.o vvdot.o mmdot.o poolalloc.o
+POOLVOLTESTOBJ = leastsq_kkt.o leastsq.o lubksb.o ludcmp.o luminv.o volume-test-pool.o mvdot.o vvdot.o mmdot.o poolalloc.o
 VOLTESTOBJ = leastsq_kkt.o leastsq.o lubksb.o ludcmp.o luminv.o volume-test.o mvdot.o vvdot.o mmdot.o poolalloc.o
 
 # Default target
-all: run 
+all: run pool-run
 	
-pool: pool-run
+volume: volume-test-pool volume-test
 	
-volume: volume-test
-	
+volume-test-pool: $(POOLVOLTESTOBJ)
+	$(CC) $(CFLAGS) -o $@ $(POOLVOLTESTOBJ)
+
 volume-test: $(VOLTESTOBJ)
 	$(CC) $(CFLAGS) -o $@ $(VOLTESTOBJ)
 
@@ -31,7 +33,7 @@ poolalloc.o: ../cpu-concept/poolalloc.c
 
 # Clean up build files
 clean:
-	rm -f *.o run
+	rm -f *.o run volume-test volume-test-pool pool-run
 
 .PHONY: all clean
 
