@@ -27,37 +27,55 @@ void test_mvdot()
 {
   printf("Testing mvdot...\n");
 
-  double m[6] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0};
+  int n1 = 2, n2 = 3;
+  double *m = (double*)poolmalloc(n1 * n2 * sizeof(double));
+  m[0] = 1.0; m[1] = 2.0; m[2] = 3.0;
+  m[3] = 4.0; m[4] = 5.0; m[5] = 6.0;
+
   printf("Matrix = \n");
-  for (int i = 0; i < 2; i++) {
-    for (int j = 0; j < 3; j++) {
-      printf("%f ", m[i * 3 + j]);
+  for (int i = 0; i < n1; i++) {
+    for (int j = 0; j < n2; j++) {
+      printf("%f ", m[i * n2 + j]);
     }
     printf("\n");
   }
 
-  double v[3] = {7.0, 8.0, 9.0};
+  double *v = (double*)poolmalloc(n2 * sizeof(double));
+  v[0] = 7.0; v[1] = 8.0; v[2] = 9.0;
+
   printf("Vector = \n");
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < n2; i++) {
     printf("%f\n", v[i]);
   }
 
-  double r[2];
-  mvdot(r, m, v, 2, 3);
+  double *r = (double*)poolmalloc(n1 * sizeof(double));
+  mvdot(r, m, v, n1, n2);
   printf("Matrix-vector product: %f %f\n", r[0], r[1]);
   printf("\n");
+
+  poolfree(m);
+  poolfree(v);
+  poolfree(r);
 }
 
 // test mmdot
 void test_mmdot()
 {
   printf("Testing mmdot...\n");
-  double a[6] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0};
-  double b[6] = {7.0, 8.0, 9.0, 10.0, 11.0, 12.0};
-  double r[4];
   int n1 = 2;
   int n2 = 3;
   int n3 = 2;
+
+  double *a = (double*)poolmalloc(n1 * n2 * sizeof(double));
+  double *b = (double*)poolmalloc(n2 * n3 * sizeof(double));
+  double *r = (double*)poolmalloc(n1 * n3 * sizeof(double));
+
+  a[0] = 1.0; a[1] = 2.0; a[2] = 3.0;
+  a[3] = 4.0; a[4] = 5.0; a[5] = 6.0;
+
+  b[0] = 7.0;  b[1] = 8.0;
+  b[2] = 9.0;  b[3] = 10.0;
+  b[4] = 11.0; b[5] = 12.0;
 
   printf("Matrix A= \n");
   for (int i = 0; i < n1; i++) {
@@ -76,7 +94,7 @@ void test_mmdot()
   }
 
   mmdot(r, a, b, n1, n2, n3);
-  
+
   printf("Matrix product R= \n");
   for (int i = 0; i < n1; i++) {
     for (int j = 0; j < n3; j++) {
@@ -85,15 +103,20 @@ void test_mmdot()
     printf("\n");
   }
   printf("\n");
+
+  poolfree(a);
+  poolfree(b);
+  poolfree(r);
 }
 
 // test ludcmp
 void test_ludcmp()
 {
   printf("Testing ludcmp...\n");
-  double a[4] = {1.0, 2.0, 3.0, 4.0};
-  int indx[2];
   int n = 2;
+  double *a = (double*)poolmalloc(n * n * sizeof(double));
+  int *indx = (int*)poolmalloc(n * sizeof(int));
+  a[0] = 1.0; a[1] = 2.0; a[2] = 3.0; a[3] = 4.0;
   int d = ludcmp(a, indx, n);
   printf("LU decomposition: d = %d\n", d);
   printf("LU matrix:\n");
@@ -109,6 +132,8 @@ void test_ludcmp()
   }
   printf("\n");
   printf("\n");
+  poolfree(a);
+  poolfree(indx);
 }
 
 // test lubksb
