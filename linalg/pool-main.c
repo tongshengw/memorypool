@@ -3,17 +3,23 @@
 #include <string.h>
 
 #include "linalg.h"
+#include "../cpu-concept/poolalloc.h"
 
 // test vvdot
 void test_vvdot()
 {
   printf("Testing vvdot...\n");
-  double a[3] = {1.0, 2.0, 3.0};
-  double b[3] = {4.0, 5.0, 6.0};
-  double result = vvdot(a, b, 3);
+  int n = 3;
+  double *a = (double*)poolmalloc(n * sizeof(double));
+  double *b = (double*)poolmalloc(n * sizeof(double));
+  a[0] = 1.0; a[1] = 2.0; a[2] = 3.0;
+  b[0] = 4.0; b[1] = 5.0; b[2] = 6.0;
+  double result = vvdot(a, b, n);
   printf("Dot product: %f\n", result);
   printf("Expected: 32.000000\n");
   printf("\n");
+  poolfree(a);
+  poolfree(b);
 }
 
 // test mvdot
@@ -258,7 +264,7 @@ void test_leastsq_kkt_large()
   int n1 = 184; // number of rows
   int n2 = 15; // number of columns
 
-  double *a = (double*)malloc(n1 * n2 * sizeof(double));
+  double *a = (double*)poolmalloc(n1 * n2 * sizeof(double));
   FILE *file_a = fopen("X.txt", "r");
   if (file_a == NULL) {
     fprintf(stderr, "Could not open file X.txt\n");
@@ -273,7 +279,7 @@ void test_leastsq_kkt_large()
   }
   fclose(file_a);
 
-  double *b = (double*)malloc(n1 * sizeof(double));
+  double *b = (double*)poolmalloc(n1 * sizeof(double));
   FILE *file_b = fopen("Y.txt", "r");
   if (file_b == NULL) {
     fprintf(stderr, "Could not open file b.txt\n");
@@ -316,7 +322,7 @@ void test_leastsq_kkt_large()
 
   int neq = 1; // number of equality constraints
   int n3 = neq + n2; // number of constraints
-  double *c = (double*)malloc(n3 * n2 * sizeof(double));
+  double *c = (double*)poolmalloc(n3 * n2 * sizeof(double));
 
   // first row: add up to 1.0
   for (int i = 0; i < n2; i++) {
@@ -334,7 +340,7 @@ void test_leastsq_kkt_large()
     }
   }
 
-  double *d = (double*)malloc(n3 * sizeof(double));
+  double *d = (double*)poolmalloc(n3 * sizeof(double));
   // first constraint: sum to 1.0
   d[0] = 1.0;
   // other constraints: set to 0.0
@@ -359,7 +365,7 @@ void test_leastsq_kkt_large()
 
   // call leastsq_kkt
   // copy b
-  double *b0 = (double*)malloc(n1 * sizeof(double));
+  double *b0 = (double*)poolmalloc(n1 * sizeof(double));
   memcpy(b0, b, n1 * sizeof(double));
 
   // test solution
@@ -391,16 +397,17 @@ void test_leastsq_kkt_large()
   printf("Cost function =  %f\n", cost);
   printf("Cost function1 =  %f\n", cost1);
 
-  free(a);
-  free(b);
-  free(c);
-  free(d);
-  free(b0);
+  poolfree(a);
+  poolfree(b);
+  poolfree(c);
+  poolfree(d);
+  poolfree(b0);
   printf("\n");
 }
 
 int main(int argc, char *argv[])
 {
+  poolinit();
   test_vvdot();
   test_mvdot();
   test_mmdot();
