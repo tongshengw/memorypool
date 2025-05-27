@@ -1,20 +1,19 @@
 #pragma once
 
-// C/C++
 #include <math.h>
 
-inline double svph2o(double t, double p, double beta, double gamma) {
+static inline double svph2o(double t, double p, double beta, double gamma) {
   return p * exp((1. - 1. / t) * beta - gamma * log(t));
 }
 
-inline double svp_h2o_Umich(double T) {
+static inline double svp_h2o_Umich(double T) {
   double x = -2445.5646 / T + 8.2312 * log10(T) - 0.01677006 * T +
              1.20514e-05 * T * T - 6.757169;
   return pow(10.0, x) * 1.E5 / 760.;
 }
 
 // (273, 373)
-inline double svp_h2o_Antoine(double T) {
+static inline double svp_h2o_Antoine(double T) {
   if (T < 303.) {
     return 1.e5 * pow(10., 5.40221 - (1838.675 / (T - 31.737)));
   } else if (T < 333.) {
@@ -28,7 +27,7 @@ inline double svp_h2o_Antoine(double T) {
 }
 
 // (100, 373.16)
-inline double sat_vapor_p_H2O_Hubner(double T) {
+static inline double sat_vapor_p_H2O_Hubner(double T) {
   double A, B, C, D;
   A = 4.07023;
   B = -2484.98;
@@ -39,7 +38,7 @@ inline double sat_vapor_p_H2O_Hubner(double T) {
 }
 
 // (0, 273.16)
-inline double sat_vapor_p_H2O_Fray(double T) {
+static inline double sat_vapor_p_H2O_Fray(double T) {
   double a[7], x, pt, Tt, tr;
   pt = 6.11657e-03;
   Tt = 273.16;
@@ -57,7 +56,7 @@ inline double sat_vapor_p_H2O_Fray(double T) {
   return 1.E5 * pt * exp(1.5 * log(tr) + (1 - 1 / tr) * x);
 }
 
-inline double sat_vapor_p_H2O_BriggsS(double T) {
+static inline double sat_vapor_p_H2O_BriggsS(double T) {
   double a[6], x;
   if (T < 273.16) {
     a[1] = -5631.1206;
@@ -76,31 +75,32 @@ inline double sat_vapor_p_H2O_BriggsS(double T) {
   return exp(x) / 10.;
 }
 
-inline double sat_vapor_p_H2O_Bolton(double T) {
+static inline double sat_vapor_p_H2O_Bolton(double T) {
   double result;
   result = 612.2 * exp(17.67 * (T - 273.15) / (T - 29.65));
   return result;
 }
 
-inline double sat_vapor_p_H2O_Smithsonian(double T) {
+static inline double sat_vapor_p_H2O_Smithsonian(double T) {
   double result;
   result = 100. * exp(23.33086 - 6111.72784 / T + 0.15215 * log(T));
   return result;
 }
 
-inline double sat_vapor_p_H2O_Ideal(double T) {
+static inline double sat_vapor_p_H2O_Ideal(double T) {
   double betal = 24.845, gammal = 4.986009, betas = 22.98, gammas = 0.52,
          tr = 273.16, pr = 611.7;
   return T > tr ? svph2o(T / tr, pr, betal, gammal)
                 : svph2o(T / tr, pr, betas, gammas);
 }
 
-inline double sat_vapor_p_H2O_liquid_Ideal(double T) {
-  double betal = 24.845, gammal = 4.986009, tr = 273.16, pr = 611.7;
-  return svph2o(T / tr, pr, betal, gammal);
-}
-
-inline double sat_vapor_p_H2O_solid_Ideal(double T) {
-  double betas = 22.98, gammas = 0.52, tr = 273.16, pr = 611.7;
-  return svph2o(T / tr, pr, betas, gammas);
+static inline double sat_vapor_p_H2O_Ideal_logddT(double T) {
+  double betal = 24.845, gammal = 4.986009, betas = 22.98, gammas = 0.52,
+         tr = 273.16;
+  double t = T / tr;
+  if (T > tr) {
+    return (gammal - betal / t + betal / (t * t)) / T;
+  } else {
+    return (gammas - betas / t + betas / (t * t)) / T;
+  }
 }

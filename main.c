@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <linalg.h>
+#include <linalg/linalg.h>
+#include <phy/saturation_adjustment.h>
+#include <phy/h2o.h>
 
 // test vvdot
 void test_vvdot()
@@ -399,6 +401,42 @@ void test_leastsq_kkt_large()
   printf("\n");
 }
 
+void test_saturation_adjustment_h2o()
+{
+  printf("Testing saturation adjustment for H2O...\n");
+  // H2O <=> H2O(l)
+  int nspecies = 2;
+  int nreaction = 1;
+  int max_iter = 20;
+  double h0 = 1.e4;
+  double temp[] = {300.};
+  double conc[] = {1.0, 0.0};
+  double stoich[] = {-1.0, 1.0};
+
+  double enthalpy_offset[] = {0.0, 0.0};
+  double cp_multiplier[] = {1.0, 1.0};
+  user_func1 enthalpy_func[] = {NULL, NULL};
+  user_func1 enthalpy_func_ddT[] = {NULL, NULL};
+  user_func1 logsvp_func[] = {sat_vapor_p_H2O_Ideal};
+  user_func1 logsvp_func_ddT[] = {sat_vapor_p_H2O_Ideal_logddT};
+
+  int err = saturation_adjustment(
+    temp, conc, h0, stoich, nspecies, nreaction,
+    enthalpy_offset, cp_multiplier,
+    logsvp_func, logsvp_func_ddT,
+    enthalpy_func, enthalpy_func_ddT,
+    &max_iter);
+
+  if (err != 0) {
+    fprintf(stderr, "Error in saturation_adjustment: %d\n", err);
+  } else {
+    printf("Saturation adjustment successful.\n");
+    printf("Temperature: %f K\n", temp[0]);
+    printf("Concentration H2O: %f mol/m^3\n", conc[0]);
+    printf("Concentration H2O(l): %f mol/m^3\n", conc[1]);
+  }
+}
+
 int main(int argc, char *argv[])
 {
   test_vvdot();
@@ -410,4 +448,5 @@ int main(int argc, char *argv[])
   test_leastsq();
   test_leastsq_kkt();
   test_leastsq_kkt_large();
+  test_saturation_adjustment_h2o();
 }

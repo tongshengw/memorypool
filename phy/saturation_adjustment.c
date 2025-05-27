@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include <linalg.h>
+#include <linalg/linalg.h>
 #include "saturation_adjustment.h"
 
 int saturation_adjustment(
@@ -11,10 +11,12 @@ int saturation_adjustment(
     double const *stoich,
     int nspecies,
     int nreaction,
-    user_func1 const *enthalpy_func,
-    user_func1 const *enthalpy_func_ddT,
+    double const *enthalpy_offset,
+    double const *cp_multiplier,
     user_func1 const *logsvp_func,
     user_func1 const *logsvp_func_ddT,
+    user_func1 const *enthalpy_func,
+    user_func1 const *enthalpy_func_ddT,
     int *max_iter)
 {
   double *enthalpy = (double*)malloc(nspecies * sizeof(double));
@@ -50,8 +52,14 @@ int saturation_adjustment(
       double zc = 0.;
       // evaluate enthalpy and its derivative
       for (int i = 0; i < nspecies; i++) {
-        enthalpy[i] = enthalpy_func[i](*temp);
-        enthalpy_ddT[i] = enthalpy_func_ddT[i](*temp);
+        enthalpy[i] = enthalpy_offset[i];
+        if (enthalpy_func[i] != NULL) {
+          enthalpy[i] += enthalpy_func[i](*temp);
+        }
+        enthalpy_ddT[i] = cp_multiplier[i];
+        if (enthalpy_func_ddT[i] != NULL) {
+          enthalpy_ddT[i] *= enthalpy_func_ddT[i](*temp);
+        }
         zh += enthalpy[i] * conc[i];
         zc += enthalpy_ddT[i] * conc[i];
       }

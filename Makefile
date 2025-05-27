@@ -1,7 +1,8 @@
 # Compiler settings
 CC = gcc
 NVCC = nvcc
-CFLAGS = -g3 -Wall -I./linalg -I./phy
+CURRENT_DIR = $(shell pwd)
+CFLAGS = -g3 -Wall -I$(CURRENT_DIR)
 LDFLAGS =
 CUDAFLAGS = -g3 -Xcompiler -Wall
 
