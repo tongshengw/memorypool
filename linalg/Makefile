@@ -2,9 +2,15 @@
 CC = gcc
 CFLAGS = -g3 -Wall
 OBJ = leastsq_kkt.o leastsq.o lubksb.o ludcmp.o luminv.o main.o mvdot.o vvdot.o mmdot.o
+POOLOBJ = leastsq_kkt.o leastsq.o lubksb.o ludcmp.o luminv.o pool-main.o mvdot.o vvdot.o mmdot.o
 
 # Default target
 all: run 
+	
+pool: pool-run
+
+pool-run: $(POOLOBJ)
+	$(CC) $(CFLAGS) -o $@ $(POOLOBJ)
 
 # Linking
 run: $(OBJ)
