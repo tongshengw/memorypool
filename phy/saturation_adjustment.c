@@ -12,13 +12,37 @@ int saturation_adjustment(
     int nspecies,
     int nreaction,
     double const *enthalpy_offset,
-    double const *cp_multiplier,
+    double const *cp_const,
     user_func1 const *logsvp_func,
     user_func1 const *logsvp_func_ddT,
-    user_func1 const *enthalpy_func,
-    user_func1 const *enthalpy_func_ddT,
+    user_func1 const *enthalpy_extra,
+    user_func1 const *enthalpy_extra_ddT,
     int *max_iter)
 {
+  // check positive temperature
+  if (*temp <= 0) {
+    return 1; // error: non-positive temperature
+  }
+
+  // check non-negative concentration
+  for (int i = 0; i < nspecies; i++) {
+    if (conc[i] < 0) {
+      return 1; // error: negative concentration
+    }
+  }
+
+  // check dimensions
+  if (nspecies <= 0 || nreaction <= 0) {
+    return 1; // error: invalid dimensions
+  }
+
+  // check non-negative cp
+  for (int i = 0; i < nspecies; i++) {
+    if (cp_const[i] < 0) {
+      return 1; // error: negative heat capacity
+    }
+  }
+
   double *enthalpy = (double*)malloc(nspecies * sizeof(double));
   double *enthalpy_ddT = (double*)malloc(nspecies * sizeof(double));
   double *logsvp = (double*)malloc(nreaction * sizeof(double));
@@ -50,15 +74,16 @@ int saturation_adjustment(
     do {
       double zh = 0.;
       double zc = 0.;
+
       // evaluate enthalpy and its derivative
       for (int i = 0; i < nspecies; i++) {
-        enthalpy[i] = enthalpy_offset[i];
-        if (enthalpy_func[i] != NULL) {
-          enthalpy[i] += enthalpy_func[i](*temp);
+        enthalpy[i] = enthalpy_offset[i] + cp_const[i] * (*temp);
+        if (enthalpy_extra[i] != NULL) {
+          enthalpy[i] += enthalpy_extra[i](*temp);
         }
-        enthalpy_ddT[i] = cp_multiplier[i];
-        if (enthalpy_func_ddT[i] != NULL) {
-          enthalpy_ddT[i] *= enthalpy_func_ddT[i](*temp);
+        enthalpy_ddT[i] = cp_const[i];
+        if (enthalpy_extra_ddT[i] != NULL) {
+          enthalpy_ddT[i] += enthalpy_extra_ddT[i](*temp);
         }
         zh += enthalpy[i] * conc[i];
         zc += enthalpy_ddT[i] * conc[i];

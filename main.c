@@ -415,16 +415,16 @@ void test_saturation_adjustment_h2o()
 
   double enthalpy_offset[] = {0.0, 0.0};
   double cp_multiplier[] = {1.0, 1.0};
-  user_func1 enthalpy_func[] = {NULL, NULL};
-  user_func1 enthalpy_func_ddT[] = {NULL, NULL};
   user_func1 logsvp_func[] = {sat_vapor_p_H2O_Ideal};
   user_func1 logsvp_func_ddT[] = {sat_vapor_p_H2O_Ideal_logddT};
+  user_func1 enthalpy_extra[] = {NULL, NULL};
+  user_func1 enthalpy_extra_ddT[] = {NULL, NULL};
 
   int err = saturation_adjustment(
     temp, conc, h0, stoich, nspecies, nreaction,
     enthalpy_offset, cp_multiplier,
     logsvp_func, logsvp_func_ddT,
-    enthalpy_func, enthalpy_func_ddT,
+    enthalpy_extra, enthalpy_extra_ddT,
     &max_iter);
 
   if (err != 0) {
@@ -448,5 +448,5 @@ int main(int argc, char *argv[])
   test_leastsq();
   test_leastsq_kkt();
   test_leastsq_kkt_large();
-  //test_saturation_adjustment_h2o();
+  test_saturation_adjustment_h2o();
 }
