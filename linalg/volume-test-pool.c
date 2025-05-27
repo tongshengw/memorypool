@@ -5,8 +5,7 @@
 
 #include "../cpu-concept/poolalloc.h"
 #include "linalg.h"
-
-#define NUM_TESTS 100000
+#include "volume-test.h"
 
 void test_vol_leastsq_kkt_large() {
     int n1 = 184; // number of rows

@@ -7,8 +7,8 @@ POOLVOLTESTOBJ = leastsq_kkt.o leastsq.o lubksb.o ludcmp.o luminv.o volume-test-
 VOLTESTOBJ = leastsq_kkt.o leastsq.o lubksb.o ludcmp.o luminv.o volume-test.o mvdot.o vvdot.o mmdot.o poolalloc.o
 
 # Default target
-all: run pool-run
-	
+all: run pool-run volume-test volume-test-pool
+
 volume: volume-test-pool volume-test
 	
 volume-test-pool: $(POOLVOLTESTOBJ)
@@ -25,7 +25,7 @@ run: $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $(OBJ)
 
 # Compile .c to .o
-%.o: %.c linalg.h
+%.o: %.c linalg.h volume-test.h
 	$(CC) $(CFLAGS) -c $< -o $@
 	
 poolalloc.o: ../cpu-concept/poolalloc.c

@@ -3,10 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../cpu-concept/poolalloc.h"
 #include "linalg.h"
-
-#define NUM_TESTS 100000
+#include "volume-test.h"
 
 void test_vol_leastsq_kkt_large() {
     int n1 = 184; // number of rows
@@ -88,7 +86,7 @@ void test_vol_leastsq_kkt_large() {
         cost += diff * diff;
         cost1 += diff1 * diff1;
     }
-    
+
     assert(cost > 389 && cost < 390);
     assert(cost1 > 397 && cost < 398);
 
