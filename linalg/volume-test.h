@@ -1,0 +1,1 @@
+#define NUM_TESTS 10

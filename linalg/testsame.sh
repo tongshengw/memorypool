@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# used to compare output correctness of main.c using pool vs using malloc
 set -e
 set -o pipefail
 
