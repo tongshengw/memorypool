@@ -87,8 +87,6 @@ int saturation_adjustment(
   int iter = 0;
   int err_code = 0;
   while (iter++ < *max_iter) {
-    printf("======= Iteration %d\n", iter);
-
     // evaluate log vapor saturation pressure and its derivative
     for (int j = 0; j < nreaction; j++) {
       double stoich_sum = 0.0;
@@ -96,10 +94,8 @@ int saturation_adjustment(
         if (stoich[i * nreaction + j] < 0) { // reactant
           stoich_sum += (-stoich[i * nreaction + j]);
         }
-      printf("stoich_sum = %f\n", stoich_sum);
       logsvp[j] = logsvp_func[j](*temp) - stoich_sum * log(Rgas * (*temp));
       logsvp_ddT[j] = logsvp_func_ddT[j](*temp) - stoich_sum / (*temp);
-      printf("logsvp [%d] = %f, logsvp_ddT[%d] = %f\n", j, logsvp[j], j, logsvp_ddT[j]);
     }
 
     // calculate heat capacity
@@ -124,7 +120,6 @@ int saturation_adjustment(
           prod *= conc[i];
         }
       }
-      printf("log_conc_sum = %f, prod = %f\n", log_conc_sum, prod);
 
       // active set, weight matrix and rhs vector
       if ((log_conc_sum < (logsvp[j] - logsvp_eps) && prod > 0.) ||
@@ -149,14 +144,6 @@ int saturation_adjustment(
       // all reactions are in equilibrium, no need to adjust saturation
       break;
     }
-    printf("nactive reactions = %d\n", first);
-    printf("weight matrix:\n");
-    for (int j = 0; j < first; j++) {
-      for (int i = 0; i < nspecies; i++) {
-        printf("%f ", weight[j * nspecies + i]);
-      }
-      printf("\n");
-    }
 
     // form active stoichiometric and constraint matrix
     int nactive = first;
@@ -165,65 +152,25 @@ int saturation_adjustment(
         int j = reaction_set[k];
         stoich_active[i * nactive + k] = stoich[i * nreaction + j];
       }
-    printf("active stoichiometric matrix:\n");
-    for (int i = 0; i < nspecies; i++) {
-      for (int j = 0; j < first; j++) {
-        printf("%f ", stoich_active[i * nreaction + j]);
-      }
-      printf("\n");
-    }
 
     mmdot(umat, weight, stoich_active, nactive, nspecies, nactive);
-    printf("umatrix:\n");
-    for (int j = 0; j < nactive; j++) {
-      for (int i = 0; i < nactive; i++) {
-        printf("%f ", umat[j * nactive + i]);
-      }
-      printf("\n");
-    }
 
     for (int i = 0; i < nspecies; i++)
       for (int k = 0; k < nactive; k++) {
         stoich_active[i * nactive + k] *= -1;
       }
-    printf("constraint matrix:\n");
-    for (int i = 0; i < nspecies; i++) {
-      for (int j = 0; j < nactive; j++) {
-        printf("%f ", stoich_active[i * nactive + j]);
-      }
-      printf("\n");
-    }
-    printf("b vector (rhs):\n");
-    for (int i = 0; i < nactive; i++) {
-      printf("%f\n", rhs[i]);
-    }
-    printf("d vector (conc):\n");
-    for (int i = 0; i < nspecies; i++) {
-      printf("%f\n", conc[i]);
-    }
 
     // solve constrained optimization problem (KKT)
     int max_kkt_iter = *max_iter;
     err_code = leastsq_kkt(rhs, umat, stoich_active, conc,
                           nactive, nactive, nspecies, 0, &max_kkt_iter);
     if (err_code != 0) break;
-    printf("KKT solution:\n");
-    for (int i = 0; i < nactive; i++) {
-      printf("%f ", rhs[i]);
-    }
-    printf("\n");
 
     // rate -> conc
     for (int i = 0; i < nspecies; i++) {
       for (int k = 0; k < nactive; k++) {
         conc[i] -= stoich_active[i * nactive + k] * rhs[k];
       }
-    }
-
-    // print concentrations
-    printf("Updated concentrations:\n");
-    for (int i = 0; i < nspecies; i++) {
-      printf("conc[%d] = %f\n", i, conc[i]);
     }
 
     // temperature iteration
@@ -245,7 +192,6 @@ int saturation_adjustment(
         zh += enthalpy[i] * conc[i];
         zc += enthalpy_ddT[i] * conc[i];
       }
-      printf("zh = %f, zc = %f\n", zh, zc);
 
       temp0 = *temp;
       (*temp) += (h0 - zh) / zc;
@@ -256,18 +202,6 @@ int saturation_adjustment(
       err_code = 3; // error: non-positive temperature after adjustment
       break;
     }
-
-    printf("********** temp = %f\n", *temp);
-    printf("enthalpy = [");
-    for (int i = 0; i < nspecies; i++) {
-      printf("%f ", enthalpy[i]);
-    }
-    printf("]\n");
-    printf("enthalpy_ddT = [");
-    for (int i = 0; i < nspecies; i++) {
-      printf("%f ", enthalpy_ddT[i]);
-    }
-    printf("]\n");
   }
   
   free(enthalpy);

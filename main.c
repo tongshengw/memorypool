@@ -441,6 +441,7 @@ void test_equilibrate_tp_h2o()
     printf("Concentration H2O: %f mol/m^3\n", conc[1]);
     printf("Concentration H2O(l): %f mol/m^3\n", conc[2]);
   }
+  printf("\n");
 }
 
 void test_saturation_adjustment_h2o()
@@ -451,8 +452,8 @@ void test_saturation_adjustment_h2o()
   int nreaction = 1;
   int max_iter = 20;
 
-  double temp[] = {300.};
-  double conc[] = {38.67, 1.419, 3865.76};
+  double temp[] = {200.};
+  double conc[] = {4., 40., 0.};
   double stoich[] = {0., -1.0, 1.0};
 
   double enthalpy_offset[] = {0.0, 0.0, -45.e3};
@@ -463,16 +464,12 @@ void test_saturation_adjustment_h2o()
   user_func1 enthalpy_extra[] = {NULL, NULL, NULL};
   user_func1 enthalpy_extra_ddT[] = {NULL, NULL, NULL};
 
-  double h0 = thermo_prop(*temp, conc, nspecies,
-                          enthalpy_offset, cp_const, enthalpy_extra);
-  printf("h0 = %g J/mol\n", h0);
-
   // modify concentrtion
   conc[1] = conc[1] + conc[2];
   conc[2] = 0.;
 
-  h0 = thermo_prop(*temp, conc, nspecies,
-                   enthalpy_offset, cp_const, enthalpy_extra);
+  double h0 = thermo_prop(*temp, conc, nspecies,
+                          enthalpy_offset, cp_const, enthalpy_extra);
   printf("h0 (before) = %g J/mol\n", h0);
 
   int err = saturation_adjustment(
@@ -490,6 +487,7 @@ void test_saturation_adjustment_h2o()
     fprintf(stderr, "Error in saturation_adjustment: %d\n", err);
   } else {
     printf("Saturation adjustment successful.\n");
+    printf("Iterations: %d\n", max_iter);
     printf("Temperature: %f K\n", temp[0]);
     printf("Concentration air: %f mol/m^3\n", conc[0]);
     printf("Concentration H2O: %f mol/m^3\n", conc[1]);
