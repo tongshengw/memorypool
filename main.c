@@ -3,7 +3,7 @@
 #include <string.h>
 
 #include <linalg/linalg.h>
-#include <phy/saturation_adjustment.h>
+#include <phy/thermo.h>
 #include <phy/h2o.h>
 
 // test vvdot
@@ -405,36 +405,49 @@ void test_saturation_adjustment_h2o()
 {
   printf("Testing saturation adjustment for H2O...\n");
   // H2O <=> H2O(l)
-  int nspecies = 2;
+  int nspecies = 3;
+  int ngas = 2;
   int nreaction = 1;
   int max_iter = 20;
-  double h0 = 1.e4;
+
   double temp[] = {300.};
-  double conc[] = {1.0, 0.0};
-  double stoich[] = {-1.0, 1.0};
+  double pres[] = {1.e5}; // 1 bar in Pa
+  double conc[] = {20.0, 10.0, 0.0};
+  double xfrac[] = {0.5, 0.5, 0.0};
+  double stoich[] = {0., -1.0, 1.0};
 
-  double enthalpy_offset[] = {0.0, 0.0};
-  double cp_multiplier[] = {1.0, 1.0};
-  user_func1 logsvp_func[] = {sat_vapor_p_H2O_Ideal};
-  user_func1 logsvp_func_ddT[] = {sat_vapor_p_H2O_Ideal_logddT};
-  user_func1 enthalpy_extra[] = {NULL, NULL};
-  user_func1 enthalpy_extra_ddT[] = {NULL, NULL};
+  double enthalpy_offset[] = {0.0, 0.0, -45.e3};
+  double cp_const[] = {21.0, 21.0, 21.0};
 
-  int err = saturation_adjustment(
+  user_func1 logsvp_func[] = {logsvp_H2O_Ideal};
+  user_func1 logsvp_func_ddT[] = {logsvp_ddT_H2O_Ideal};
+  user_func1 enthalpy_extra[] = {NULL, NULL, NULL};
+  user_func1 enthalpy_extra_ddT[] = {NULL, NULL, NULL};
+
+  int err = equilibrate_tp(
+      xfrac, *temp, *pres, stoich, nspecies, nreaction, ngas,
+      logsvp_func, 1.e-6, &max_iter);
+
+  double h0 = thermo_prop(*temp, conc, nspecies,
+                          enthalpy_offset, cp_const, enthalpy_extra);
+  printf("Initial enthalpy h0 = %f J/mol\n", h0);
+
+  /*int err = saturation_adjustment(
     temp, conc, h0, stoich, nspecies, nreaction,
-    enthalpy_offset, cp_multiplier,
+    enthalpy_offset, cp_const,
     logsvp_func, logsvp_func_ddT,
     enthalpy_extra, enthalpy_extra_ddT,
-    &max_iter);
+    1.e-6, &max_iter);
 
   if (err != 0) {
     fprintf(stderr, "Error in saturation_adjustment: %d\n", err);
   } else {
     printf("Saturation adjustment successful.\n");
     printf("Temperature: %f K\n", temp[0]);
-    printf("Concentration H2O: %f mol/m^3\n", conc[0]);
-    printf("Concentration H2O(l): %f mol/m^3\n", conc[1]);
-  }
+    printf("Concentration air: %f mol/m^3\n", conc[0]);
+    printf("Concentration H2O: %f mol/m^3\n", conc[1]);
+    printf("Concentration H2O(l): %f mol/m^3\n", conc[2]);
+  }*/
 }
 
 int main(int argc, char *argv[])

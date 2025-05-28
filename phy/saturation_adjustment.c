@@ -1,8 +1,9 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 
 #include <linalg/linalg.h>
-#include "saturation_adjustment.h"
+#include "thermo.h"
 
 int saturation_adjustment(
     double *temp,
@@ -17,8 +18,11 @@ int saturation_adjustment(
     user_func1 const *logsvp_func_ddT,
     user_func1 const *enthalpy_extra,
     user_func1 const *enthalpy_extra_ddT,
+    double logsvp_eps,
     int *max_iter)
 {
+  const double Rgas = 8.31446; // J/(mol*K)
+  
   // check positive temperature
   if (*temp <= 0) {
     return 1; // error: non-positive temperature
@@ -63,40 +67,37 @@ int saturation_adjustment(
     reaction_set[i] = i;
   }
 
+  // evaluate enthalpy and its derivative
+  for (int i = 0; i < nspecies; i++) {
+    enthalpy[i] = enthalpy_offset[i] + cp_const[i] * (*temp);
+    if (enthalpy_extra[i]) {
+      enthalpy[i] += enthalpy_extra[i](*temp);
+    }
+    enthalpy_ddT[i] = cp_const[i];
+    if (enthalpy_extra_ddT[i]) {
+      enthalpy_ddT[i] += enthalpy_extra_ddT[i](*temp);
+    }
+  }
+
   // active stoichiometric matrix
   double *stoich_active = (double*)malloc(nspecies * nreaction * sizeof(double));
 
   int iter = 0;
   int kkt_err = 0;
   while (iter++ < *max_iter) {
-    // temperature iteration
-    double temp0;
-    do {
-      double zh = 0.;
-      double zc = 0.;
-
-      // evaluate enthalpy and its derivative
-      for (int i = 0; i < nspecies; i++) {
-        enthalpy[i] = enthalpy_offset[i] + cp_const[i] * (*temp);
-        if (enthalpy_extra[i] != NULL) {
-          enthalpy[i] += enthalpy_extra[i](*temp);
-        }
-        enthalpy_ddT[i] = cp_const[i];
-        if (enthalpy_extra_ddT[i] != NULL) {
-          enthalpy_ddT[i] += enthalpy_extra_ddT[i](*temp);
-        }
-        zh += enthalpy[i] * conc[i];
-        zc += enthalpy_ddT[i] * conc[i];
-      }
-
-      temp0 = *temp;
-      (*temp) += (h0 - zh) / zc;
-    } while (fabs(*temp - temp0) > 1e-4);
+    printf("======= Iteration %d\n", iter);
 
     // evaluate log vapor saturation pressure and its derivative
-    for (int i = 0; i < nreaction; i++) {
-      logsvp[i] = logsvp_func[i](*temp);
-      logsvp_ddT[i] = logsvp_func_ddT[i](*temp);
+    for (int j = 0; j < nreaction; j++) {
+      double stoich_sum = 0.0;
+      for (int i = 0; i < nspecies; i++)
+        if (stoich[i * nreaction + j] < 0) { // reactant
+          stoich_sum += (-stoich[i * nreaction + j]);
+        }
+      printf("stoich_sum = %f\n", stoich_sum);
+      logsvp[j] = logsvp_func[j](*temp) - stoich_sum * log(Rgas * (*temp));
+      logsvp_ddT[j] = logsvp_func_ddT[j](*temp) - stoich_sum / (*temp);
+      printf("logsvp [%d] = %f, logsvp_ddT[%d] = %f\n", j, logsvp[j], j, logsvp_ddT[j]);
     }
 
     // calculate heat capacity
@@ -121,10 +122,11 @@ int saturation_adjustment(
           prod *= conc[i];
         }
       }
+      printf("log_conc_sum = %f, prod = %f\n", log_conc_sum, prod);
 
       // active set, weight matrix and rhs vector
-      if ((log_conc_sum < logsvp[j] && prod > 0.) ||
-          (log_conc_sum > logsvp[j])) {
+      if ((log_conc_sum < (logsvp[j] - logsvp_eps) && prod > 0.) ||
+          (log_conc_sum > (logsvp[j] + logsvp_eps))) {
         for (int i = 0; i < nspecies; i++) {
           weight[first * nspecies + i] = logsvp_ddT[j] * enthalpy[i] / heat_capacity;
           if (stoich[i * nreaction + j] < 0) {
@@ -145,6 +147,14 @@ int saturation_adjustment(
       // all reactions are in equilibrium, no need to adjust saturation
       break;
     }
+    printf("nactive reactions = %d\n", first);
+    printf("weight matrix:\n");
+    for (int j = 0; j < first; j++) {
+      for (int i = 0; i < nspecies; i++) {
+        printf("%f ", weight[j * nspecies + i]);
+      }
+      printf("\n");
+    }
 
     // form active stoichiometric and constraint matrix
     int nactive = first;
@@ -153,18 +163,53 @@ int saturation_adjustment(
         int j = reaction_set[k];
         stoich_active[i * nactive + k] = stoich[i * nreaction + j];
       }
+    printf("active stoichiometric matrix:\n");
+    for (int i = 0; i < nspecies; i++) {
+      for (int j = 0; j < first; j++) {
+        printf("%f ", stoich_active[i * nreaction + j]);
+      }
+      printf("\n");
+    }
 
     mmdot(umat, weight, stoich_active, nactive, nspecies, nactive);
+    printf("umatrix:\n");
+    for (int j = 0; j < nactive; j++) {
+      for (int i = 0; i < nactive; i++) {
+        printf("%f ", umat[j * nactive + i]);
+      }
+      printf("\n");
+    }
 
     for (int i = 0; i < nspecies; i++)
       for (int k = 0; k < nactive; k++) {
         stoich_active[i * nactive + k] *= -1;
       }
+    printf("constraint matrix:\n");
+    for (int i = 0; i < nspecies; i++) {
+      for (int j = 0; j < nactive; j++) {
+        printf("%f ", stoich_active[i * nactive + j]);
+      }
+      printf("\n");
+    }
+    printf("b vector (rhs):\n");
+    for (int i = 0; i < nactive; i++) {
+      printf("%f\n", rhs[i]);
+    }
+    printf("d vector (conc):\n");
+    for (int i = 0; i < nspecies; i++) {
+      printf("%f\n", conc[i]);
+    }
 
     // solve constrained optimization problem (KKT)
+    int max_kkt_iter = *max_iter;
     kkt_err = leastsq_kkt(rhs, umat, stoich_active, conc,
-                          nactive, nactive, nspecies, 0, max_iter);
+                          nactive, nactive, nspecies, 0, &max_kkt_iter);
     if (kkt_err != 0) break;
+    printf("KKT solution:\n");
+    for (int i = 0; i < nactive; i++) {
+      printf("%f ", rhs[i]);
+    }
+    printf("\n");
 
     // rate -> conc
     for (int i = 0; i < nspecies; i++) {
@@ -172,6 +217,49 @@ int saturation_adjustment(
         conc[i] -= stoich_active[i * nactive + k] * rhs[k];
       }
     }
+
+    // print concentrations
+    printf("Updated concentrations:\n");
+    for (int i = 0; i < nspecies; i++) {
+      printf("conc[%d] = %f\n", i, conc[i]);
+    }
+
+    // temperature iteration
+    double temp0 = 0.;
+    do {
+      double zh = 0.;
+      double zc = 0.;
+
+      // re-evaluate enthalpy and its derivative
+      for (int i = 0; i < nspecies; i++) {
+        enthalpy[i] = enthalpy_offset[i] + cp_const[i] * (*temp);
+        if (enthalpy_extra[i]) {
+          enthalpy[i] += enthalpy_extra[i](*temp);
+        }
+        enthalpy_ddT[i] = cp_const[i];
+        if (enthalpy_extra_ddT[i]) {
+          enthalpy_ddT[i] += enthalpy_extra_ddT[i](*temp);
+        }
+        zh += enthalpy[i] * conc[i];
+        zc += enthalpy_ddT[i] * conc[i];
+      }
+      printf("zh = %f, zc = %f\n", zh, zc);
+
+      temp0 = *temp;
+      (*temp) += (h0 - zh) / zc;
+    } while (fabs(*temp - temp0) > 1e-4);
+
+    printf("********** temp = %f\n", *temp);
+    printf("enthalpy = [");
+    for (int i = 0; i < nspecies; i++) {
+      printf("%f ", enthalpy[i]);
+    }
+    printf("]\n");
+    printf("enthalpy_ddT = [");
+    for (int i = 0; i < nspecies; i++) {
+      printf("%f ", enthalpy_ddT[i]);
+    }
+    printf("]\n");
   }
   
   free(enthalpy);
@@ -185,8 +273,10 @@ int saturation_adjustment(
   free(stoich_active);
 
   if (iter >= *max_iter) {
+    fprintf(stderr, "Saturation adjustment did not converge after %d iterations.\n", *max_iter);
     return 2; // failure to converge
   } else {
+    *max_iter = iter;
     return kkt_err; // success or KKT error
   }
 } 

@@ -240,6 +240,7 @@ int leastsq_kkt(double *b, double const *a, double const* c, double const* d,
 
   if (iter >= *max_iter) {
     *max_iter = iter;
+    fprintf(stderr, "Warning: leastsq_kkt maximum number of iterations reached (%d).\n", *max_iter);
     return 2; // failure to converge
   }
 

@@ -2,8 +2,8 @@
 
 #include <math.h>
 
-static inline double svph2o(double t, double p, double beta, double gamma) {
-  return p * exp((1. - 1. / t) * beta - gamma * log(t));
+static inline double logsvp_h2o(double t, double p, double beta, double gamma) {
+  return log(p) + (1. - 1. / t) * beta - gamma * log(t);
 }
 
 static inline double svp_h2o_Umich(double T) {
@@ -87,20 +87,19 @@ static inline double sat_vapor_p_H2O_Smithsonian(double T) {
   return result;
 }
 
-static inline double sat_vapor_p_H2O_Ideal(double T) {
+static inline double logsvp_H2O_Ideal(double T) {
   double betal = 24.845, gammal = 4.986009, betas = 22.98, gammas = 0.52,
          tr = 273.16, pr = 611.7;
-  return T > tr ? svph2o(T / tr, pr, betal, gammal)
-                : svph2o(T / tr, pr, betas, gammas);
+  return T > tr ? logsvp_h2o(T / tr, pr, betal, gammal)
+                : logsvp_h2o(T / tr, pr, betas, gammas);
 }
 
-static inline double sat_vapor_p_H2O_Ideal_logddT(double T) {
+static inline double logsvp_ddT_H2O_Ideal(double T) {
   double betal = 24.845, gammal = 4.986009, betas = 22.98, gammas = 0.52,
          tr = 273.16;
-  double t = T / tr;
   if (T > tr) {
-    return (gammal - betal / t + betal / (t * t)) / T;
+    return (tr * betal) / (T * T) - gammal / T;
   } else {
-    return (gammas - betas / t + betas / (t * t)) / T;
+    return (tr * betas) / (T * T) - gammas / T;
   }
 }
