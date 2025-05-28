@@ -19,6 +19,34 @@ int equilibrate_tp(
     double logsvp_eps,
     int *max_iter)
 {
+  // check positive temperature and pressure
+  if (temp <= 0 || pres <= 0) {
+    fprintf(stderr, "Error: Non-positive temperature or pressure.\n");
+    return 1; // error: non-positive temperature or pressure
+  }
+
+  // check positive gas fractions
+  for (int i = 0; i < ngas; i++) {
+    if (xfrac[i] <= 0) {
+      fprintf(stderr, "Error: Non-positive gas fraction for species %d.\n", i);
+      return 1; // error: negative gas fraction
+    }
+  }
+
+  // check non-negative solid concentration
+  for (int i = ngas; i < nspecies; i++) {
+    if (xfrac[i] < 0) {
+      fprintf(stderr, "Error: Negative solid concentration for species %d.\n", i);
+      return 1; // error: negative solid concentration
+    }
+  }
+
+  // check dimensions
+  if (nspecies <= 0 || nreaction <= 0 || ngas < 1) {
+    fprintf(stderr, "Error: nspecies, nreaction must be positive integers and ngas >= 1.\n");
+    return 1; // error: invalid dimensions
+  }
+  
   double *logsvp = (double*)malloc(nreaction * sizeof(double));
 
   // weight matrix
@@ -194,7 +222,7 @@ int equilibrate_tp(
         if (i < ngas && xfrac[i] <= 0.) positive_vapor = false;
       }
       if (positive_vapor) break;
-      lambda *= 0.5;
+      lambda *= 0.99;
     }
   }
 

@@ -25,24 +25,28 @@ int saturation_adjustment(
   
   // check positive temperature
   if (*temp <= 0) {
+    fprintf(stderr, "Error: Non-positive temperature.\n");
     return 1; // error: non-positive temperature
   }
 
   // check non-negative concentration
   for (int i = 0; i < nspecies; i++) {
     if (conc[i] < 0) {
+      fprintf(stderr, "Error: Negative concentration for species %d.\n", i);
       return 1; // error: negative concentration
     }
   }
 
   // check dimensions
   if (nspecies <= 0 || nreaction <= 0) {
+    fprintf(stderr, "Error: nspecies and nreaction must be positive integers.\n");
     return 1; // error: invalid dimensions
   }
 
   // check non-negative cp
   for (int i = 0; i < nspecies; i++) {
     if (cp_const[i] < 0) {
+      fprintf(stderr, "Error: Negative heat capacity for species %d.\n", i);
       return 1; // error: negative heat capacity
     }
   }
