@@ -1,1 +1,1 @@
-#define NUM_TESTS 10
+#define NUM_TESTS 100000

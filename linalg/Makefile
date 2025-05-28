@@ -1,7 +1,7 @@
 # Compiler and flags
 CC = gcc
 CFLAGS = -O3 -Wall
-OBJ = leastsq_kkt.o leastsq.o lubksb.o ludcmp.o luminv.o main.o mvdot.o vvdot.o mmdot.o
+OBJ = leastsq_kkt.o leastsq.o lubksb.o ludcmp.o luminv.o main.o mvdot.o vvdot.o mmdot.o poolalloc.o
 POOLOBJ = leastsq_kkt.o leastsq.o lubksb.o ludcmp.o luminv.o pool-main.o mvdot.o vvdot.o mmdot.o poolalloc.o
 POOLVOLTESTOBJ = leastsq_kkt.o leastsq.o lubksb.o ludcmp.o luminv.o volume-test-pool.o mvdot.o vvdot.o mmdot.o poolalloc.o
 VOLTESTOBJ = leastsq_kkt.o leastsq.o lubksb.o ludcmp.o luminv.o volume-test.o mvdot.o vvdot.o mmdot.o poolalloc.o

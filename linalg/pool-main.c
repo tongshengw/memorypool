@@ -117,7 +117,7 @@ void test_ludcmp()
   double *a = (double*)poolmalloc(n * n * sizeof(double));
   int *indx = (int*)poolmalloc(n * sizeof(int));
   a[0] = 1.0; a[1] = 2.0; a[2] = 3.0; a[3] = 4.0;
-  int d = ludcmp(a, indx, n);
+  int d = ludcmp_pool(a, indx, n);
   printf("LU decomposition: d = %d\n", d);
   printf("LU matrix:\n");
   for (int i = 0; i < n; i++) {
@@ -161,7 +161,7 @@ void test_lubksb()
     printf("%f\n", b[i]);
   }
 
-  ludcmp(a, indx, n);
+  ludcmp_pool(a, indx, n);
   lubksb(b, a, indx, n);
   printf("Solution vector x= \n");
   for (int i = 0; i < n; i++) {
@@ -193,8 +193,8 @@ void test_luminv()
     printf("\n");
   }
 
-  ludcmp(a, indx, n);
-  luminv(y, a, indx, n);
+  ludcmp_pool(a, indx, n);
+  luminv_pool(y, a, indx, n);
   printf("Inverse matrix Y= \n");
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
@@ -236,7 +236,7 @@ void test_leastsq()
     printf("%f\n", b[i]);
   }
 
-  leastsq(b, a, n1, n2);
+  leastsq_pool(b, a, n1, n2);
   printf("Least squares solution: \n");
   for (int i = 0; i < n2; i++) {
     printf("%f\n", b[i]);
@@ -296,7 +296,7 @@ void test_leastsq_kkt()
   }
 
   int max_iter = 20;
-  int err = leastsq_kkt(b, a, c, d, n1, n2, n3, neq, &max_iter);
+  int err = leastsq_kkt_pool(b, a, c, d, n1, n2, n3, neq, &max_iter);
   if (err != 0) {
     fprintf(stderr, "Error in leastsq_kkt: %d\n", err);
   }
