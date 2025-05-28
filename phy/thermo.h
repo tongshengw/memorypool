@@ -6,6 +6,8 @@ extern "C" {
 
 typedef double (*user_func1)(double temp);
 
+static const double Rgas = 8.31446; // J/(mol*K), universal gas constant
+
 /*!
  * \brief Calculate thermodynamic properties based on temperature and concentrations
  *
@@ -23,6 +25,48 @@ double thermo_prop(
     double const *offset,
     double const *first_derivative,
     user_func1 const *extra);
+
+/*
+ * \brief Convert mole fractions to mole concentrations
+ *
+ * This function converts mole fractions of species to their
+ * corresponding concentrations in mol/m^3.
+ * Gas species are assumed to be the first `ngas` species in the
+ * `xfrac` array, and the remaining species are considered
+ * condensed.
+ *
+ * \param[out] conc output array of concentrations in mol/m^3.
+ * \param[in] p_ov_RT pressure divided by the product of gas constant and temperature (P/RT).
+ * \param[in] xfrac input array of mole fractions.
+ * \param[in] nspecies number of species.
+ * \param[in] ngas number of gas species.
+ */
+void frac2conc(
+    double *conc,
+    double p_ov_RT,
+    double const *xfrac,
+    int nspecies,
+    int ngas);
+
+/*
+ * \brief Convert mole concentrations to mole fractions
+ *
+ * This function converts mole concentrations of species to their
+ * corresponding mole fractions.
+ * Gas species are assumed to be the first `ngas` species in the
+ * `conc` array, and the remaining species are considered
+ * condensed.
+ *
+ * \param[out] xfrac output array of mole fractions.
+ * \param[in] conc input array of concentrations in mol/m^3.
+ * \param[in] nspecies number of species.
+ * \param[in] ngas number of gas species.
+ */
+void conc2frac(
+    double *xfrac,
+    double const *conc,
+    int nspecies,
+    int ngas);
 
 /*! 
  * \brief Calculate thermodynamic equilibrium at gven temperature and pressure 

@@ -401,19 +401,58 @@ void test_leastsq_kkt_large()
   printf("\n");
 }
 
-void test_saturation_adjustment_h2o()
+void test_equilibrate_tp_h2o()
 {
-  printf("Testing saturation adjustment for H2O...\n");
+  printf("Testing equilibrate_tp for H2O...\n");
   // H2O <=> H2O(l)
   int nspecies = 3;
   int ngas = 2;
   int nreaction = 1;
   int max_iter = 20;
 
-  double temp[] = {300.};
-  double pres[] = {1.e5}; // 1 bar in Pa
-  double conc[] = {20.0, 10.0, 0.0};
+  double temp = 300.;
+  double pres = 1.e5; // 1 bar in Pa
   double xfrac[] = {0.01, 0.01, 0.99};
+  double stoich[] = {0., -1.0, 1.0};
+
+  user_func1 logsvp_func[] = {logsvp_H2O_Ideal};
+
+  int err = equilibrate_tp(
+      xfrac, temp, pres, stoich, nspecies, nreaction, ngas,
+      logsvp_func, 1.e-6, &max_iter);
+
+  double conc[3];
+  frac2conc(conc, pres / (Rgas * temp), xfrac, nspecies, ngas);
+
+
+  if (err != 0) {
+    fprintf(stderr, "Error in equilibrate_tp: %d\n", err);
+  } else {
+    printf("Equilibrate TP successful.\n");
+    printf("Iterations: %d\n", max_iter);
+    printf("Temperature: %f K\n", temp);
+    printf("Pressure: %f Pa\n", pres);
+    printf("Saturation Vapor Pressure: %f Pa\n", exp(logsvp_H2O_Ideal(temp)));
+    //printf("Enthalpy h0 = %f J/mol\n", h0);
+    printf("Mole fraction of air: %f\n", xfrac[0]);
+    printf("Mole fraction of H2O: %g\n", xfrac[1]);
+    printf("Mole fraction H2O(l): %f\n", xfrac[2]);
+    printf("Concentration air: %f mol/m^3\n", conc[0]);
+    printf("Concentration H2O: %f mol/m^3\n", conc[1]);
+    printf("Concentration H2O(l): %f mol/m^3\n", conc[2]);
+  }
+}
+
+void test_saturation_adjustment_h2o()
+{
+  printf("Testing saturation adjustment for H2O...\n");
+  // H2O <=> H2O(l)
+  int nspecies = 3;
+  int nreaction = 1;
+  int max_iter = 20;
+
+  double temp[] = {300.};
+  double conc[] = {38.67, 1.419, 3865.76};
   double stoich[] = {0., -1.0, 1.0};
 
   double enthalpy_offset[] = {0.0, 0.0, -45.e3};
@@ -424,32 +463,28 @@ void test_saturation_adjustment_h2o()
   user_func1 enthalpy_extra[] = {NULL, NULL, NULL};
   user_func1 enthalpy_extra_ddT[] = {NULL, NULL, NULL};
 
-  int err = equilibrate_tp(
-      xfrac, *temp, *pres, stoich, nspecies, nreaction, ngas,
-      logsvp_func, 1.e-6, &max_iter);
-
   double h0 = thermo_prop(*temp, conc, nspecies,
                           enthalpy_offset, cp_const, enthalpy_extra);
+  printf("h0 = %g J/mol\n", h0);
 
-  if (err != 0) {
-    fprintf(stderr, "Error in equilibrate_tp: %d\n", err);
-  } else {
-    printf("Equilibrate TP successful.\n");
-    printf("Iterations: %d\n", max_iter);
-    printf("Temperature: %f K\n", temp[0]);
-    printf("Pressure: %f Pa\n", pres[0]);
-    printf("Enthalpy h0 = %f J/mol\n", h0);
-    printf("Mole fraction of air: %f\n", xfrac[0]);
-    printf("Mole fraction of H2O: %g\n", xfrac[1]);
-    printf("Mole fraction H2O(l): %f\n", xfrac[2]);
-  }
+  // modify concentrtion
+  conc[1] = conc[1] + conc[2];
+  conc[2] = 0.;
 
-  /*int err = saturation_adjustment(
+  h0 = thermo_prop(*temp, conc, nspecies,
+                   enthalpy_offset, cp_const, enthalpy_extra);
+  printf("h0 (before) = %g J/mol\n", h0);
+
+  int err = saturation_adjustment(
     temp, conc, h0, stoich, nspecies, nreaction,
     enthalpy_offset, cp_const,
     logsvp_func, logsvp_func_ddT,
     enthalpy_extra, enthalpy_extra_ddT,
     1.e-6, &max_iter);
+
+  h0 = thermo_prop(*temp, conc, nspecies,
+                   enthalpy_offset, cp_const, enthalpy_extra);
+  printf("h1 (after) = %g J/mol\n", h0);
 
   if (err != 0) {
     fprintf(stderr, "Error in saturation_adjustment: %d\n", err);
@@ -459,7 +494,7 @@ void test_saturation_adjustment_h2o()
     printf("Concentration air: %f mol/m^3\n", conc[0]);
     printf("Concentration H2O: %f mol/m^3\n", conc[1]);
     printf("Concentration H2O(l): %f mol/m^3\n", conc[2]);
-  }*/
+  }
 }
 
 int main(int argc, char *argv[])
@@ -473,5 +508,6 @@ int main(int argc, char *argv[])
   test_leastsq();
   test_leastsq_kkt();
   test_leastsq_kkt_large();
+  test_equilibrate_tp_h2o();
   test_saturation_adjustment_h2o();
 }

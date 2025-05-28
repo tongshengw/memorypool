@@ -21,8 +21,6 @@ int saturation_adjustment(
     double logsvp_eps,
     int *max_iter)
 {
-  const double Rgas = 8.31446; // J/(mol*K)
-  
   // check positive temperature
   if (*temp <= 0) {
     fprintf(stderr, "Error: Non-positive temperature.\n");
@@ -87,7 +85,7 @@ int saturation_adjustment(
   double *stoich_active = (double*)malloc(nspecies * nreaction * sizeof(double));
 
   int iter = 0;
-  int kkt_err = 0;
+  int err_code = 0;
   while (iter++ < *max_iter) {
     printf("======= Iteration %d\n", iter);
 
@@ -206,9 +204,9 @@ int saturation_adjustment(
 
     // solve constrained optimization problem (KKT)
     int max_kkt_iter = *max_iter;
-    kkt_err = leastsq_kkt(rhs, umat, stoich_active, conc,
+    err_code = leastsq_kkt(rhs, umat, stoich_active, conc,
                           nactive, nactive, nspecies, 0, &max_kkt_iter);
-    if (kkt_err != 0) break;
+    if (err_code != 0) break;
     printf("KKT solution:\n");
     for (int i = 0; i < nactive; i++) {
       printf("%f ", rhs[i]);
@@ -230,7 +228,7 @@ int saturation_adjustment(
 
     // temperature iteration
     double temp0 = 0.;
-    do {
+    while (fabs(*temp - temp0) > 1e-4) {
       double zh = 0.;
       double zc = 0.;
 
@@ -251,7 +249,13 @@ int saturation_adjustment(
 
       temp0 = *temp;
       (*temp) += (h0 - zh) / zc;
-    } while (fabs(*temp - temp0) > 1e-4);
+    }
+
+    if (*temp <= 0.) {
+      fprintf(stderr, "Error: Non-positive temperature after adjustment.\n");
+      err_code = 3; // error: non-positive temperature after adjustment
+      break;
+    }
 
     printf("********** temp = %f\n", *temp);
     printf("enthalpy = [");
@@ -281,6 +285,6 @@ int saturation_adjustment(
     return 2; // failure to converge
   } else {
     *max_iter = iter;
-    return kkt_err; // success or KKT error
+    return err_code; // success or KKT error
   }
 } 
