@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
+#include <stdbool.h>
 
 #include <linalg/linalg.h>
 #include "thermo.h"
@@ -40,6 +42,9 @@ int equilibrate_tp(
   // sum of reactant stoichiometric coefficients
   double *stoich_sum = (double*)malloc(nreaction * sizeof(double));
 
+  // copy of xfrac
+  double *xfrac0 = (double*)malloc(nspecies * sizeof(double));
+
   // evaluate log vapor saturation pressure and its derivative
   for (int j = 0; j < nreaction; j++) {
     stoich_sum[j] = 0.0;
@@ -48,16 +53,26 @@ int equilibrate_tp(
         stoich_sum[j] += (-stoich[i * nreaction + j]);
       }
     logsvp[j] = logsvp_func[j](temp) - stoich_sum[j] * log(pres);
+    printf("logsvp [%d] = %f\n", j, logsvp[j]);
   }
 
   int iter = 0;
   int kkt_err = 0;
   while (iter++ < *max_iter) {
+    printf("======= Iteration %d\n", iter);
+
+    // print fractions
+    printf("xfrac:\n");
+    for (int i = 0; i < nspecies; i++) {
+      printf("%f\n", xfrac[i]);
+    }
+
     // fraction of gases
     double xg = 0.0;
     for (int i = 0; i < ngas; i++) {
       xg += xfrac[i];
     }
+    printf("xg = %f\n", xg);
 
     // populate weight matrix, rhs vector and active set
     int first = 0;
@@ -75,6 +90,7 @@ int equilibrate_tp(
           prod *= xfrac[i];
         }
       }
+      printf("log_frac_sum = %f, prod = %f\n", log_frac_sum, prod);
 
       // active set, weight matrix and rhs vector
       if ((log_frac_sum < (logsvp[j] - logsvp_eps) && prod > 0.) ||
@@ -104,6 +120,14 @@ int equilibrate_tp(
       // all reactions are in equilibrium, no need to adjust saturation
       break;
     }
+    printf("nactive reactions = %d\n", first);
+    printf("weight matrix:\n");
+    for (int j = 0; j < first; j++) {
+      for (int i = 0; i < nspecies; i++) {
+        printf("%f ", weight[j * nspecies + i]);
+      }
+      printf("\n");
+    }
 
     // form active stoichiometric and constraint matrix
     int nactive = first;
@@ -120,17 +144,57 @@ int equilibrate_tp(
         stoich_active[i * nactive + k] *= -1;
       }
 
+    printf("umatrix:\n");
+    for (int j = 0; j < nactive; j++) {
+      for (int i = 0; i < nactive; i++) {
+        printf("%f ", umat[j * nactive + i]);
+      }
+      printf("\n");
+    }
+
+    printf("constraint matrix:\n");
+    for (int i = 0; i < nspecies; i++) {
+      for (int j = 0; j < nactive; j++) {
+        printf("%f ", stoich_active[i * nactive + j]);
+      }
+      printf("\n");
+    }
+    printf("b vector (rhs):\n");
+    for (int i = 0; i < nactive; i++) {
+      printf("%f\n", rhs[i]);
+    }
+    printf("d vector (xfrac):\n");
+    for (int i = 0; i < nspecies; i++) {
+      printf("%f\n", xfrac[i]);
+    }
+
     // solve constrained optimization problem (KKT)
     int max_kkt_iter = *max_iter;
     kkt_err = leastsq_kkt(rhs, umat, stoich_active, xfrac,
                           nactive, nactive, nspecies, 0, &max_kkt_iter);
     if (kkt_err != 0) break;
+    printf("KKT solution:\n");
+    for (int i = 0; i < nactive; i++) {
+      printf("%f ", rhs[i]);
+    }
+    printf("\n");
 
     // rate -> xfrac
-    for (int i = 0; i < nspecies; i++) {
-      for (int k = 0; k < nactive; k++) {
-        xfrac[i] -= stoich_active[i * nactive + k] * rhs[k];
+    // copy xfrac to xfrac0
+    memcpy(xfrac0, xfrac, nspecies * sizeof(double));
+    double lambda = 1.;  // scale
+
+    while (true) {
+      bool positive_vapor = true;
+      for (int i = 0; i < nspecies; i++) {
+        for (int k = 0; k < nactive; k++) {
+          int j = reaction_set[k];
+          xfrac[i] = xfrac0[i] + stoich[i * nactive + j] * rhs[k] * lambda;
+        }
+        if (i < ngas && xfrac[i] <= 0.) positive_vapor = false;
       }
+      if (positive_vapor) break;
+      lambda *= 0.5;
     }
   }
 
@@ -141,6 +205,7 @@ int equilibrate_tp(
   free(reaction_set);
   free(stoich_active);
   free(stoich_sum);
+  free(xfrac0);
 
   if (iter >= *max_iter) {
     fprintf(stderr, "Saturation adjustment did not converge after %d iterations.\n", *max_iter);

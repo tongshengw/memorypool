@@ -410,7 +410,7 @@ void test_saturation_adjustment_h2o()
   int nreaction = 1;
   int max_iter = 20;
 
-  double temp[] = {300.};
+  double temp[] = {320.};
   double pres[] = {1.e5}; // 1 bar in Pa
   double conc[] = {20.0, 10.0, 0.0};
   double xfrac[] = {0.5, 0.5, 0.0};
@@ -430,7 +430,18 @@ void test_saturation_adjustment_h2o()
 
   double h0 = thermo_prop(*temp, conc, nspecies,
                           enthalpy_offset, cp_const, enthalpy_extra);
-  printf("Initial enthalpy h0 = %f J/mol\n", h0);
+
+  if (err != 0) {
+    fprintf(stderr, "Error in equilibrate_tp: %d\n", err);
+  } else {
+    printf("Equilibrate TP successful.\n");
+    printf("Temperature: %f K\n", temp[0]);
+    printf("Pressure: %f Pa\n", pres[0]);
+    printf("Enthalpy h0 = %f J/mol\n", h0);
+    printf("Mole fraction of air: %f\n", xfrac[0]);
+    printf("Mole fraction of H2O: %f\n", xfrac[1]);
+    printf("Mole fraction H2O(l): %f\n", xfrac[2]);
+  }
 
   /*int err = saturation_adjustment(
     temp, conc, h0, stoich, nspecies, nreaction,
