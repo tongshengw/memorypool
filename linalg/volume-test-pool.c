@@ -73,7 +73,7 @@ void test_vol_leastsq_kkt_large() {
                      0.0491, 0.0699, 0.0733, 0.0139, 0.1680};
 
     int max_iter = 20;
-    int err = leastsq_kkt(b, a, c, d, n1, n2, n3, neq, &max_iter);
+    int err = leastsq_kkt_pool(b, a, c, d, n1, n2, n3, neq, &max_iter);
     assert(err == 0);
 
     double cost = 0.0, cost1 = 0.0;
