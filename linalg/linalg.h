@@ -47,6 +47,7 @@ void mmdot(double *r, double const *a, double const *b, int n1, int n2, int n3);
  * \param[in] n size of matrix
  */
 int ludcmp(double *a, int *indx, int n);
+int ludcmp_pool(double *a, int *indx, int n);
 
 /*! 
  * \brief Solves the set of n linear equations A.X = B. 
@@ -77,6 +78,7 @@ void lubksb(double *b, double const *a, int const *indx, int n);
  * \param[in] n size of matrix
  */
 void luminv(double *y, double const *a, int const *indx, int n);
+void luminv_pool(double *y, double const *a, int const *indx, int n);
 
 /*! 
  * \brief solve least square problem min ||A.x - b||
@@ -88,6 +90,7 @@ void luminv(double *y, double const *a, int const *indx, int n);
  * \param[in] n2 number of columns in matrix
  */
 void leastsq(double *b, double const *a, int n1, int n2);
+void leastsq_pool(double *b, double const *a, int n1, int n2);
 
 /*!
  * \brief solve constrained least square problem: min ||A.x - b||, s.t. C.x <= d
