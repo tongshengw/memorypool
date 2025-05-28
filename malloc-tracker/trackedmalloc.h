@@ -2,4 +2,6 @@
 
 void *trackedmalloc(size_t size);
 
-unsigned long get_total_bytes();
+void trackedfree(void* ptr);
+
+unsigned long get_peak_usage();
