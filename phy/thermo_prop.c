@@ -15,10 +15,6 @@ double thermo_prop(
 {
   double prop = 0.;
   for (int i = 0; i < nspecies; i++) {
-    if (conc[i] < 0) {
-      fprintf(stderr, "Error: Negative concentration for species %d.\n", i);
-      return 0; // error: negative concentration
-    }
     double propi = offset[i] + first_derivative[i] * temp;
     if (extra[i]) {
       propi += extra[i](temp);

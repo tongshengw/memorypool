@@ -10,10 +10,10 @@ inline double svp_nh3_h2s_Umich(double T) {
   return (pow(10.0, GOLB2)) * Pcgs_of_atm * Pcgs_of_atm;
 }
 
-inline double svp_nh3_h2s_Lewis(double T) {
-  return pow(10., 14.82 - 4705. / T) * 101325. * 101325.;
+static inline double logsvp_NH3_H2S_Lewis(double T) {
+  return (14.82 - 4705. / T) * log(10.) + 2. * log(101325.);
 }
 
-inline torch::Tensor logsvp_ddT_nh3_h2s_Lewis(torch::Tensor T) {
-  return 4705. * log(10) / (T * T);
+static inline double logsvp_ddT_NH3_H2S_Lewis(double T) {
+  return 4705. * log(10.) / (T * T);
 }

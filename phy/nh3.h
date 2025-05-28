@@ -1,10 +1,6 @@
 #pragma once
 
-#include <math.h>
-
-inline double svpnh3(double t, double p, double beta, double gamma) {
-  return p * exp((1. - 1. / t) * beta - gamma * log(t));
-}
+#include "svp_ideal.h"
 
 inline double svp_nh3_UMich(double T) {
   double x = -1790.00 / T - 1.81630 * log10(T) + 14.97593;
@@ -63,10 +59,18 @@ inline double sat_vapor_p_NH3_Fray(double T) {
   return 1.E5 * exp(x + a[0]);
 }
 
-inline double sat_vapor_p_NH3_Ideal(double T) {
+static inline double logsvp_NH3_Ideal(double T) {
   double betal = 20.08, gammal = 5.62, betas = 20.64, gammas = 1.43, tr = 195.4,
          pr = 6060.;
 
-  return T > tr ? svpnh3(T / tr, pr, betal, gammal)
-                : svpnh3(T / tr, pr, betas, gammas);
+  return (T > tr ? logsvp_ideal(T / tr, betal, gammal)
+                 : logsvp_ideal(T / tr, betas, gammas)) + log(pr);
+}
+
+static inline double logsvp_ddT_NH3_Ideal(double T) {
+  double betal = 20.08, gammal = 5.62, betas = 20.64, gammas = 1.43, tr = 195.4,
+         pr = 6060.;
+
+  return (T > tr ? logsvp_ddT_ideal(T / tr, betal, gammal)
+                 : logsvp_ddT_ideal(T / tr, betas, gammas)) / tr;
 }

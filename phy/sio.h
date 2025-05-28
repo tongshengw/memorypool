@@ -2,13 +2,11 @@
 
 #include <math.h>
 
-inline double svp_sio_Visscher(double T) {
+static inline double logsvp_SiO_Visscher(double T) {
   auto log10p = 8.203 - 25898.9 / T;
-  return 1.E5 * pow(10., log10p);
+  return log(1.E5) + log(10.) * log10p;
 }
 
-inline double svp_sio_Visscher_logsvp_ddT(double T) {
+static inline double logsvp_ddT_SiO_Visscher(double T) {
   return 25898.9 / (T * T);
 }
-
-}  // namespace kintera

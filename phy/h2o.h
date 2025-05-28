@@ -1,10 +1,6 @@
 #pragma once
 
-#include <math.h>
-
-static inline double logsvp_h2o(double t, double p, double beta, double gamma) {
-  return log(p) + (1. - 1. / t) * beta - gamma * log(t);
-}
+#include "svp_ideal.h"
 
 static inline double svp_h2o_Umich(double T) {
   double x = -2445.5646 / T + 8.2312 * log10(T) - 0.01677006 * T +
@@ -90,16 +86,13 @@ static inline double sat_vapor_p_H2O_Smithsonian(double T) {
 static inline double logsvp_H2O_Ideal(double T) {
   double betal = 24.845, gammal = 4.986009, betas = 22.98, gammas = 0.52,
          tr = 273.16, pr = 611.7;
-  return T > tr ? logsvp_h2o(T / tr, pr, betal, gammal)
-                : logsvp_h2o(T / tr, pr, betas, gammas);
+  return (T > tr ? logsvp_ideal(T / tr, betal, gammal)
+                 : logsvp_ideal(T / tr, betas, gammas)) + log(pr);
 }
 
 static inline double logsvp_ddT_H2O_Ideal(double T) {
   double betal = 24.845, gammal = 4.986009, betas = 22.98, gammas = 0.52,
          tr = 273.16;
-  if (T > tr) {
-    return (tr * betal) / (T * T) - gammal / T;
-  } else {
-    return (tr * betas) / (T * T) - gammas / T;
-  }
+  return (T > tr ? logsvp_ddT_ideal(T / tr, betal, gammal)
+                 : logsvp_ddT_ideal(T / tr, betas, gammas)) / tr;
 }
