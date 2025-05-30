@@ -401,6 +401,9 @@ void test_leastsq_kkt_large()
 
 int main(int argc, char *argv[])
 {
+  #ifdef USE_POOL
+  poolinit();
+  #endif
   test_vvdot();
   test_mvdot();
   test_mmdot();

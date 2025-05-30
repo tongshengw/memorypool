@@ -9,16 +9,35 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
 option(BUILD_TESTS "Build tests" ON)
-option(TESTS_USE_POOL_MALLOC "Builds tests with poolmalloc" ON)
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET "15.0")
 
 add_library(poolalloc-cpu STATIC cpu-concept/poolalloc.c cpu-concept/poolalloc.h)
 target_include_directories(poolalloc-cpu PUBLIC cpu-concept)
 
+add_executable(fuzzy-test cpu-concept/fuzzy-test.c)
+target_link_libraries(fuzzy-test PRIVATE poolalloc-cpu)
+
 add_library(malloc-tracker STATIC malloc-tracker/trackedmalloc.c malloc-tracker/trackedmalloc.h)
 target_include_directories(malloc-tracker PUBLIC malloc-tracker)
 
-add_executable(fuzzy-test cpu-concept/fuzzy-test.c)
-target_link_libraries(fuzzy-test PRIVATE poolalloc-cpu)
+add_library(linalg-ref STATIC linalg/leastsq_kkt.c linalg/leastsq.c linalg/lubksb.c linalg/ludcmp.c linalg/luminv.c linalg/mmdot.c linalg/mvdot.c linalg/vvdot.c linalg/linalg.h)
+target_include_directories(linalg-ref PUBLIC linalg)
+
+add_library(linalg-pool STATIC linalg/leastsq_kkt.c linalg/leastsq.c linalg/lubksb.c linalg/ludcmp.c linalg/luminv.c linalg/mmdot.c linalg/mvdot.c linalg/vvdot.c linalg/linalg.h)
+target_include_directories(linalg-pool PUBLIC linalg)
+target_include_directories(linalg-pool PUBLIC cpu-concept)
+target_compile_definitions(linalg-pool PUBLIC USE_POOL)
+
+add_executable(linalg-ref-test linalg/main.c linalg/linalg.h)
+target_include_directories(linalg-ref-test PUBLIC linalg)
+target_link_libraries(linalg-ref-test PRIVATE linalg-ref)
+
+add_executable(linalg-pool-test linalg/main.c linalg/linalg.h)
+target_compile_definitions(linalg-pool-test PRIVATE USE_POOL)
+target_include_directories(linalg-pool-test PUBLIC linalg)
+target_include_directories(linalg-pool-test PUBLIC cpu-concept)
+target_link_libraries(linalg-pool-test PRIVATE poolalloc-cpu)
+target_link_libraries(linalg-pool-test PRIVATE linalg-pool)
+
 

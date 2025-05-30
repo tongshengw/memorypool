@@ -4,6 +4,8 @@
 extern "C" {
 #endif
 
+#include "malloc-macro.h"
+
 /*! 
  * \brief vector-vector dot product: a.b
  * \param[in] a[0..n-1] first vector
