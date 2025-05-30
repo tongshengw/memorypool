@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "linalg.h"
+#include <linalg.h>
 
 // test vvdot
 void test_vvdot()

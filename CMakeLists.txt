@@ -21,10 +21,10 @@ target_link_libraries(fuzzy-test PRIVATE poolalloc-cpu)
 add_library(malloc-tracker STATIC malloc-tracker/trackedmalloc.c malloc-tracker/trackedmalloc.h)
 target_include_directories(malloc-tracker PUBLIC malloc-tracker)
 
-add_library(linalg-ref STATIC linalg/leastsq_kkt.c linalg/leastsq.c linalg/lubksb.c linalg/ludcmp.c linalg/luminv.c linalg/mmdot.c linalg/mvdot.c linalg/vvdot.c linalg/linalg.h)
+add_library(linalg-ref STATIC linalg/leastsq_kkt.c linalg/leastsq.c linalg/lubksb.c linalg/ludcmp.c linalg/luminv.c linalg/mmdot.c linalg/mvdot.c linalg/vvdot.c linalg/linalg.h linalg/malloc-macro.h)
 target_include_directories(linalg-ref PUBLIC linalg)
 
-add_library(linalg-pool STATIC linalg/leastsq_kkt.c linalg/leastsq.c linalg/lubksb.c linalg/ludcmp.c linalg/luminv.c linalg/mmdot.c linalg/mvdot.c linalg/vvdot.c linalg/linalg.h)
+add_library(linalg-pool STATIC linalg/leastsq_kkt.c linalg/leastsq.c linalg/lubksb.c linalg/ludcmp.c linalg/luminv.c linalg/mmdot.c linalg/mvdot.c linalg/vvdot.c linalg/linalg.h linalg/malloc-macro.h)
 target_include_directories(linalg-pool PUBLIC linalg)
 target_include_directories(linalg-pool PUBLIC cpu-concept)
 target_compile_definitions(linalg-pool PUBLIC USE_POOL)
