@@ -4,7 +4,7 @@
 extern "C" {
 #endif
 
-#include <malloc-macro.h>
+#include <mallocmacro.h>
 
 /*! 
  * \brief vector-vector dot product: a.b

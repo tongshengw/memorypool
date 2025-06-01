@@ -17,8 +17,6 @@ add_subdirectory(linalg)
 add_subdirectory(tests)
 add_subdirectory(macros)
 
-add_library(macros INTERFACE macros/malloc-macro.h)
-target_include_directories(macros INTERFACE macros)
 
 add_library(poolalloc-cpu STATIC cpu-concept/poolalloc.c cpu-concept/poolalloc.h)
 target_include_directories(poolalloc-cpu PUBLIC cpu-concept)
