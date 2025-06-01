@@ -13,9 +13,9 @@ option(BUILD_TESTS "Build tests" ON)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "15.0")
 
 add_subdirectory(cpu-concept)
+add_subdirectory(macros)
 add_subdirectory(linalg)
 add_subdirectory(tests)
-add_subdirectory(macros)
 
 
 add_library(poolalloc-cpu STATIC cpu-concept/poolalloc.c cpu-concept/poolalloc.h)
@@ -28,11 +28,5 @@ add_library(malloc-tracker STATIC malloc-tracker/trackedmalloc.c malloc-tracker/
 target_include_directories(malloc-tracker PUBLIC malloc-tracker)
 
 
-add_executable(linalg-ref-test tests/linalg-test.c)
-target_link_libraries(linalg-ref-test PRIVATE linalg-ref)
-
-add_executable(linalg-pool-test tests/linalg-test.c)
-target_compile_definitions(linalg-pool-test PRIVATE USE_POOL)
-target_link_libraries(linalg-pool-test PRIVATE linalg-pool)
 
 
