@@ -2,9 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "linalg.h"
+#include <linalg.h>
 
 // test vvdot
+// TODO: could change errors to exit(1) for better ctest
 void test_vvdot()
 {
   printf("Testing vvdot...\n");
@@ -401,6 +402,9 @@ void test_leastsq_kkt_large()
 
 int main(int argc, char *argv[])
 {
+  #ifdef USE_POOL
+  poolinit();
+  #endif
   test_vvdot();
   test_mvdot();
   test_mmdot();

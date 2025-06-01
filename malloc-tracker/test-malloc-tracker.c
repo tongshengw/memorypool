@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "trackedmalloc.h"
+#include <trackedmalloc.h>
 
 int main(void) {
     int *ptr1 = trackedmalloc(100);
