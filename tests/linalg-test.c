@@ -5,6 +5,7 @@
 #include <linalg.h>
 
 // test vvdot
+// TODO: could change errors to exit(1) for better ctest
 void test_vvdot()
 {
   printf("Testing vvdot...\n");

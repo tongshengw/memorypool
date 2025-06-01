@@ -19,3 +19,9 @@ foreach(target IN ITEMS linalg-ref-test linalg-pool-test)
         $<TARGET_FILE_DIR:${target}>
     )
 endforeach()
+
+enable_testing()
+add_test(NAME linalg-test-compare
+    COMMAND /bin/sh -c 
+    "./linalg-pool-test > out1.txt && ./linalg-ref-test > out2.txt && diff out1.txt out2.txt"
+)
