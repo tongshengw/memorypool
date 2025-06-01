@@ -13,20 +13,7 @@ option(BUILD_TESTS "Build tests" ON)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "15.0")
 
 add_subdirectory(cpu-concept)
+add_subdirectory(malloc-tracker)
 add_subdirectory(macros)
 add_subdirectory(linalg)
 add_subdirectory(tests)
-
-
-add_library(poolalloc-cpu STATIC cpu-concept/poolalloc.c cpu-concept/poolalloc.h)
-target_include_directories(poolalloc-cpu PUBLIC cpu-concept)
-
-add_executable(fuzzy-test cpu-concept/fuzzy-test.c)
-target_link_libraries(fuzzy-test PRIVATE poolalloc-cpu)
-
-add_library(malloc-tracker STATIC malloc-tracker/trackedmalloc.c malloc-tracker/trackedmalloc.h)
-target_include_directories(malloc-tracker PUBLIC malloc-tracker)
-
-
-
-
