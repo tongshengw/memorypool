@@ -17,3 +17,4 @@ ctest
 
 ## todo
 - **add functionality to verify data retrival for all allocated pointers in fuzzy test**
+- add fuzzy testing to automatic tests
