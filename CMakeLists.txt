@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.27)
-project(memorypool LANGUAGES C DESCRIPTION "Memory Pool Allocator for C")
+cmake_minimum_required(VERSION 3.25)
+project(memorypool LANGUAGES C CUDA DESCRIPTION "Memory Pool Allocator for C and CUDA")
 
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -15,3 +15,4 @@ add_subdirectory(malloc-tracker)
 add_subdirectory(macros)
 add_subdirectory(linalg)
 add_subdirectory(tests)
+add_subdirectory(gpu-concept)
