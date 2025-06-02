@@ -1,4 +1,5 @@
 set(CMAKE_CUDA_STANDARD 17)
+set(CMAKE_CUDA_ARCHITECTURES "61;75;86")
 
 add_executable(gpu-concept test.cu)
 target_link_libraries(gpu-concept ${CUDA_LIBRARIES})

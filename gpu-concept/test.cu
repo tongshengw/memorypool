@@ -19,11 +19,9 @@ __global__ void allocate_and_write(int **ptrs, int n) {
 __global__ void read_and_free(int **ptrs, int n) {
     int idx = threadIdx.x + blockIdx.x * blockDim.x;
     if (idx < n && ptrs[idx] != NULL) {
-        printf("Thread %d: ", idx);
         for (int i = 0; i < 4; ++i) {
             printf("%d ", ptrs[idx][i]);
         }
-        printf("\n");
         free(ptrs[idx]);
     }
 }
@@ -31,7 +29,6 @@ __global__ void read_and_free(int **ptrs, int n) {
 int main() {
     int n = 8;
     int **d_ptrs;
-    printf("here\n");
     cudaMalloc(&d_ptrs, n * sizeof(int*));
 
     allocate_and_write<<<1, n>>>(d_ptrs, n);
