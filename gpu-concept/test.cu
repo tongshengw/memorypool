@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <cuda_runtime.h>
+#include <poolalloc.h>
 
 __global__ void allocate_and_write(int **ptrs, int n) {
     int idx = threadIdx.x + blockIdx.x * blockDim.x;
     if (idx < n) {
-        int *mem = (int*)malloc(4 * sizeof(int));
+        int *mem = (int*)poolmalloc(4 * sizeof(int));
         if (mem != NULL) {
             for (int i = 0; i < 4; ++i) {
                 mem[i] = idx * 10 + i;
@@ -22,7 +23,7 @@ __global__ void read_and_free(int **ptrs, int n) {
         for (int i = 0; i < 4; ++i) {
             printf("%d ", ptrs[idx][i]);
         }
-        free(ptrs[idx]);
+        poolfree(ptrs[idx]);
     }
 }
 
