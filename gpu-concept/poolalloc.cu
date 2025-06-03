@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <cstdlib>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -386,7 +387,7 @@ __device__ void poolfree(void *ptr) {
     assertFreeListSorted(freeList);
 }
 
-int BlockHeaderPtrLess(const void *a, const void *b) {
+__device__ int BlockHeaderPtrLess(const void *a, const void *b) {
     BlockHeader **aptr = (BlockHeader **)a;
     BlockHeader **bptr = (BlockHeader **)b;
     return *aptr - *bptr;
@@ -397,7 +398,7 @@ int BlockHeaderPtrLess(const void *a, const void *b) {
 free: | 1028 |       | 8 \
 used: |      | 8 | 8 |
 */
-void printlayout() {
+__device__ void printlayout() {
     // FIXME: placeholder
     unsigned int threadInd = 0;
     BlockHeader *freeList = g_memoryPools[threadInd].freeList;
