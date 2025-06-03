@@ -393,6 +393,22 @@ __device__ int BlockHeaderPtrLess(const void *a, const void *b) {
     return *aptr - *bptr;
 }
 
+__device__ void selectionSort(BlockHeader **arr, int n) {
+    for (int i = 0; i < n - 1; i++) {
+        int min_idx = i;
+        for (int j = i + 1; j < n; j++) {
+            if (BlockHeaderPtrLess(&arr[j], &arr[min_idx]) < 0) {
+                min_idx = j;
+            }
+        }
+        if (min_idx != i) {
+            BlockHeader *temp = arr[i];
+            arr[i] = arr[min_idx];
+            arr[min_idx] = temp;
+        }
+    }
+}
+
 // array based
 /*
 free: | 1028 |       | 8 \
@@ -425,7 +441,7 @@ __device__ void printlayout() {
 
     // sorts headers based on address as they are usually sorted by size or
     // recency
-    qsort(headers, numHeaders, sizeof(BlockHeader *), BlockHeaderPtrLess);
+    selectionSort(headers, numHeaders);
 
     printf("Memory Layout (total size %d), size not incl headers:\n",
            MEM_POOL_SIZE);
