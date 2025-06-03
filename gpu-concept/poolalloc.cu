@@ -246,7 +246,7 @@ __device__ void *poolmalloc(unsigned long size) {
     // TODO: handle edge case where last alloc takes space of last header
     
     // FIXME: placholder
-    unsigned int threadInd = 0;
+    unsigned int threadInd = blockIdx.x * blockDim.x + threadIdx.x;
     BlockHeader *freeList = g_memoryPools[threadInd].freeList;
     BlockHeader *usedList = g_memoryPools[threadInd].usedList;
 
@@ -295,7 +295,7 @@ __device__ void *poolmalloc(unsigned long size) {
 
 __device__ void poolfree(void *ptr) {
     // FIXME: placeholder
-    unsigned int threadInd = 0;
+    unsigned int threadInd = blockIdx.x * blockDim.x + threadIdx.x;
     BlockHeader *freeList = g_memoryPools[threadInd].freeList;
     BlockHeader *usedList = g_memoryPools[threadInd].usedList;
 
@@ -414,9 +414,11 @@ __device__ void selectionSort(BlockHeader **arr, int n) {
 free: | 1028 |       | 8 \
 used: |      | 8 | 8 |
 */
+
+// NOTE: is likely very slow because of single threaded selection sort, but keeping for simplicity for now
 __device__ void printlayout() {
     // FIXME: placeholder
-    unsigned int threadInd = 0;
+    unsigned int threadInd = blockIdx.x * blockDim.x + threadIdx.x;
     BlockHeader *freeList = g_memoryPools[threadInd].freeList;
     BlockHeader *usedList = g_memoryPools[threadInd].usedList;
 
@@ -441,7 +443,8 @@ __device__ void printlayout() {
 
     // sorts headers based on address as they are usually sorted by size or
     // recency
-    selectionSort(headers, numHeaders);
+    // NOTE: not sure why LSP wants me to cast to BlockHeader** manually
+    selectionSort((BlockHeader**)headers, numHeaders);
 
     printf("Memory Layout (total size %d), size not incl headers:\n",
            MEM_POOL_SIZE);
@@ -479,7 +482,7 @@ __device__ void printlayout() {
 
 void printbytes() {
     // FIXME: placeholder
-    unsigned int threadInd = 0;
+    unsigned int threadInd = blockIdx.x * blockDim.x + threadIdx.x;
     char *memPool = g_memoryPools[threadInd].memPool;
     printf("\nBytes:\n");
     for (size_t i = 0; i < MEM_POOL_SIZE; i++) {
