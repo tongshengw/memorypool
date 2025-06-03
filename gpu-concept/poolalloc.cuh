@@ -20,7 +20,11 @@ typedef struct MemoryPool {
     char *memPool;
 } MemoryPool;
 
-__host__ void poolinit();
+__host__ void allocatePools(unsigned int numThreads);
+
+__host__ void freePools();
+
+__device__ void poolinit(unsigned int threadInd);
 
 __device__ void *poolmalloc(unsigned long size);
 
@@ -30,8 +34,8 @@ __device__ void printlayout();
 
 __device__ void printbytes();
 
-int dataBytes(BlockHeader *head);
+__device__ int dataBytes(BlockHeader *head);
 
-int headerBytes(BlockHeader *head);
+__device__ int headerBytes(BlockHeader *head);
 
 #endif
