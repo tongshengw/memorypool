@@ -5,7 +5,7 @@
 
 #include "poolalloc.cuh"
 
-#define MEM_POOL_SIZE 64000
+#define MEM_POOL_SIZE 4000
 // NOTE: MAX_BLOCKS is for printlayout function, as a buffer is created
 // statically, could change to dynamic
 #define MAX_THREADS 1024
@@ -208,11 +208,22 @@ __device__ static BlockHeader *getPrevBlockHeader(BlockHeader *header, unsigned 
     return prevBlockHeader;
 }
 
-__host__ void allocatePools() {
+__host__ void allocatePools(unsigned int numThreads) {
+    char *allocatedBlock;
+    cudaMalloc(&allocatedBlock, MEM_POOL_SIZE * numThreads);
+    for (unsigned int i = 0; i < numThreads; i++) {
+        g_memoryPools[i].memPool = allocatedBlock + (i * MEM_POOL_SIZE);
+    }
 }
 
-__device__ void poolinit() {
-    memPool = malloc(MEM_POOL_SIZE);
+__host__ void freePools(unsigned int numThreads) {
+    cudaFree(g_memoryPools[0].memPool);
+}
+
+__device__ void poolinit(unsigned int threadInd) {
+    char *memPool = g_memoryPools[threadInd].memPool;
+    BlockHeader *freeList = g_memoryPools[threadInd].freeList;
+
     BlockHeader *header = (BlockHeader *)memPool;
     // create a block that fills entire pool
     unsigned long dataSize =
@@ -221,6 +232,8 @@ __device__ void poolinit() {
     unsigned long dataSizeAligned = dataSize - dataSize % 16;
     header->size = dataSizeAligned;
     header->free = true;
+    header->next = NULL;
+    header->prev = NULL;
 
     BlockFooter *footer = getBlockFooter(header);
     footer->headerPtr = header;
@@ -291,7 +304,7 @@ __device__ void poolfree(void *ptr) {
     if (usedList->next == NULL) {
         freeList = NULL;
         usedList = NULL;
-        poolinit();
+        poolinit(threadInd);
         return;
     }
 
