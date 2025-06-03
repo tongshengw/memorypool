@@ -14,15 +14,21 @@ typedef struct BlockFooter {
     BlockHeader *headerPtr;
 } BlockFooter;
 
-void poolinit();
+typedef struct MemoryPool {
+    BlockHeader *freeList;
+    BlockHeader *usedList;
+    char *memPool;
+} MemoryPool;
 
-void *poolmalloc(unsigned long size);
+__host__ void poolinit();
 
-void poolfree(void *ptr);
+__device__ void *poolmalloc(unsigned long size);
 
-void printlayout();
+__device__ void poolfree(void *ptr);
 
-void printbytes();
+__device__ void printlayout();
+
+__device__ void printbytes();
 
 int dataBytes(BlockHeader *head);
 

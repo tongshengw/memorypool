@@ -3,11 +3,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <poolalloc.h>
+#include "poolalloc.h"
 
 #define MEM_POOL_SIZE 64000
 // NOTE: MAX_BLOCKS is for printlayout function, as a buffer is created
 // statically, could change to dynamic
+#define MAX_THREADS 1024
 #define MAX_BLOCKS 100
 
 // Alignment
@@ -23,10 +24,9 @@
 // TODO: when switching to cuda, remove malloc() in poolinit function
 // using malloc because malloc aligns to 16 on my system
 // static BlockHeader memPool[(MEM_POOL_SIZE/sizeof(BlockHeader))+1];
-char *memPool = NULL;
 
-static BlockHeader *freeList;
-static BlockHeader *usedList;
+// TODO: placeholder for now, might be able to reduce memory overhead
+__device__ MemoryPool g_memoryPools[MAX_THREADS];
 
 // NOTE:: Debug functions
 static int debugListSize(BlockHeader *head) {
