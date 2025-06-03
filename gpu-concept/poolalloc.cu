@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "poolalloc.h"
+#include "poolalloc.cuh"
 
 #define MEM_POOL_SIZE 64000
 // NOTE: MAX_BLOCKS is for printlayout function, as a buffer is created
@@ -29,7 +29,7 @@
 __device__ MemoryPool g_memoryPools[MAX_THREADS];
 
 // NOTE:: Debug functions
-static int debugListSize(BlockHeader *head) {
+__device__ static int debugListSize(BlockHeader *head) {
     int size = 0;
     BlockHeader *current = head;
     while (current) {
@@ -39,14 +39,14 @@ static int debugListSize(BlockHeader *head) {
     return size;
 }
 
-static void assertNoSizeOverflow(BlockHeader *head) {
+__device__ static void assertNoSizeOverflow(BlockHeader *head) {
     while (head) {
         assert(head->size < MEM_POOL_SIZE);
         head = head->next;
     }
 }
 
-static void assertNoCycle(BlockHeader *head) {
+__device__ static void assertNoCycle(BlockHeader *head) {
     if (head == NULL) {
         return;
     }
@@ -58,7 +58,8 @@ static void assertNoCycle(BlockHeader *head) {
         assert(slow != fast);
     }
 }
-static void assertListValid(BlockHeader *head) {
+
+__device__ static void assertListValid(BlockHeader *head) {
     assertNoCycle(head);
     BlockHeader *current = head;
     while (current) {
@@ -75,7 +76,7 @@ static void assertListValid(BlockHeader *head) {
     }
 }
 
-static void assertFreeListSorted(BlockHeader *head) {
+__device__ static void assertFreeListSorted(BlockHeader *head) {
     while (head && head->next) {
         assert(head->size >= head->next->size);
         assert(head->next->prev == head);
@@ -83,7 +84,7 @@ static void assertFreeListSorted(BlockHeader *head) {
     }
 }
 
-static void assertFootersValid(BlockHeader *head) {
+__device__ static void assertFootersValid(BlockHeader *head) {
     while (head) {
         char *tmp = (char *)head;
         BlockFooter *footer =
@@ -93,7 +94,7 @@ static void assertFootersValid(BlockHeader *head) {
     }
 }
 
-static void listRemove(BlockHeader **head, BlockHeader *target) {
+__device__ static void listRemove(BlockHeader **head, BlockHeader *target) {
     BlockHeader *front = target->next;
     BlockHeader *back = target->prev;
 
@@ -107,7 +108,7 @@ static void listRemove(BlockHeader **head, BlockHeader *target) {
     }
 }
 
-static void listPrepend(BlockHeader **head, BlockHeader *added) {
+__device__ static void listPrepend(BlockHeader **head, BlockHeader *added) {
     if (*head == NULL) {
         *head = added;
         added->prev = NULL;
@@ -120,7 +121,7 @@ static void listPrepend(BlockHeader **head, BlockHeader *added) {
     *head = added;
 }
 
-static void listSwapHeadSort(BlockHeader **head) {
+__device__ static void listSwapHeadSort(BlockHeader **head) {
     if ((*head)->next == NULL) {
         return;
     }
@@ -156,11 +157,11 @@ static void listSwapHeadSort(BlockHeader **head) {
     }
 }
 
-static BlockFooter *getBlockFooter(BlockHeader *header) {
+__device__ static BlockFooter *getBlockFooter(BlockHeader *header) {
     return (BlockFooter *)((char *)header + sizeof(BlockHeader) + header->size);
 }
 
-int dataBytes(BlockHeader *head) {
+__device__ int dataBytes(BlockHeader *head) {
     int tally = 0;
     while (head) {
         tally += head->size;
@@ -169,7 +170,7 @@ int dataBytes(BlockHeader *head) {
     return tally;
 }
 
-int headerBytes(BlockHeader *head) {
+__device__ int headerBytes(BlockHeader *head) {
     int tally = 0;
     while (head) {
         tally += sizeof(BlockHeader);
@@ -178,11 +179,12 @@ int headerBytes(BlockHeader *head) {
     return tally;
 }
 
-static int getFooterAlignedSize() {
+__device__ static int getFooterAlignedSize() {
     return sizeof(BlockFooter) + (16 - sizeof(BlockFooter) % 16);
 }
 
-static BlockHeader *getNextBlockHeader(BlockHeader *header) {
+__device__ static BlockHeader *getNextBlockHeader(BlockHeader *header, unsigned int threadInd) {
+    char *memPool = g_memoryPools[threadInd].memPool;
     int headerOffset = (char *)header - (char *)memPool;
     if (headerOffset + sizeof(BlockHeader) + header->size +
             getFooterAlignedSize() >= MEM_POOL_SIZE) {
@@ -195,7 +197,8 @@ static BlockHeader *getNextBlockHeader(BlockHeader *header) {
     return nextBlockHeader;
 }
 
-static BlockHeader *getPrevBlockHeader(BlockHeader *header) {
+__device__ static BlockHeader *getPrevBlockHeader(BlockHeader *header, unsigned int threadInd) {
+    char *memPool = g_memoryPools[threadInd].memPool;
     if ((void*)header == (void*)memPool) {
         return NULL;
     }
@@ -205,7 +208,10 @@ static BlockHeader *getPrevBlockHeader(BlockHeader *header) {
     return prevBlockHeader;
 }
 
-void poolinit() {
+__host__ void allocatePools() {
+}
+
+__device__ void poolinit() {
     memPool = malloc(MEM_POOL_SIZE);
     BlockHeader *header = (BlockHeader *)memPool;
     // create a block that fills entire pool
@@ -221,9 +227,15 @@ void poolinit() {
     listPrepend(&freeList, header);
 }
 
-void *poolmalloc(unsigned long size) {
+__device__ void *poolmalloc(unsigned long size) {
     // all pointer arithmetic is done on char* for clarity
     // TODO: handle edge case where last alloc takes space of last header
+    
+    // FIXME: placholder
+    unsigned int threadInd = 0;
+    BlockHeader *freeList = g_memoryPools[threadInd].freeList;
+    BlockHeader *usedList = g_memoryPools[threadInd].usedList;
+
     if (freeList == NULL || freeList->size < size) {
         return NULL;
     }
@@ -267,7 +279,12 @@ void *poolmalloc(unsigned long size) {
     return res;
 }
 
-void poolfree(void *ptr) {
+__device__ void poolfree(void *ptr) {
+    // FIXME: placeholder
+    unsigned int threadInd = 0;
+    BlockHeader *freeList = g_memoryPools[threadInd].freeList;
+    BlockHeader *usedList = g_memoryPools[threadInd].usedList;
+
     int initFreeListSize = debugListSize(freeList);
     int initUsedListSize = debugListSize(usedList);
 
@@ -283,7 +300,7 @@ void poolfree(void *ptr) {
     listRemove(&usedList, freedHeader);
 
     bool canCoalesceForwards = false;
-    BlockHeader *prevBlockHeader = getPrevBlockHeader(freedHeader);
+    BlockHeader *prevBlockHeader = getPrevBlockHeader(freedHeader, threadInd);
     if (prevBlockHeader == NULL) {
         canCoalesceForwards = false;
     } else if (prevBlockHeader->free) {
@@ -325,7 +342,7 @@ void poolfree(void *ptr) {
         assert(debugListSize(usedList) == initUsedListSize - 1);
     }
     
-    BlockHeader *forwardsBlockHeader = getNextBlockHeader(newFreeHeader);
+    BlockHeader *forwardsBlockHeader = getNextBlockHeader(newFreeHeader, threadInd);
     bool canCoalesceBackwards = false;
     if (forwardsBlockHeader == NULL) {
         canCoalesceBackwards = false;
@@ -368,6 +385,11 @@ free: | 1028 |       | 8 \
 used: |      | 8 | 8 |
 */
 void printlayout() {
+    // FIXME: placeholder
+    unsigned int threadInd = 0;
+    BlockHeader *freeList = g_memoryPools[threadInd].freeList;
+    BlockHeader *usedList = g_memoryPools[threadInd].usedList;
+
     BlockHeader const *headers[MAX_BLOCKS];
     for (int i = 0; i < MAX_BLOCKS; i++) {
         headers[i] = NULL;
@@ -426,6 +448,9 @@ void printlayout() {
 }
 
 void printbytes() {
+    // FIXME: placeholder
+    unsigned int threadInd = 0;
+    char *memPool = g_memoryPools[threadInd].memPool;
     printf("\nBytes:\n");
     for (size_t i = 0; i < MEM_POOL_SIZE; i++) {
         printf("%02X", memPool[i]);
