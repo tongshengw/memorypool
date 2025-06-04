@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <cstdio>
 #include <cstdlib>
 #include <math.h>
 #include <stdio.h>
@@ -222,7 +223,7 @@ __host__ void freePools(void *ptr) {
 __device__ void poolinit(void *poolBlockPtr, unsigned int threadInd) {
     g_memoryPools[threadInd].memPool = (char *)poolBlockPtr + (threadInd * MEM_POOL_SIZE);
     char *memPool = g_memoryPools[threadInd].memPool;
-    BlockHeader *freeList = g_memoryPools[threadInd].freeList;
+    BlockHeader *&freeList = g_memoryPools[threadInd].freeList;
 
     BlockHeader *header = (BlockHeader *)memPool;
     // create a block that fills entire pool
@@ -246,8 +247,8 @@ __device__ void *poolmalloc(unsigned long size) {
     
     // FIXME: placholder
     unsigned int threadInd = blockIdx.x * blockDim.x + threadIdx.x;
-    BlockHeader *freeList = g_memoryPools[threadInd].freeList;
-    BlockHeader *usedList = g_memoryPools[threadInd].usedList;
+    BlockHeader *&freeList = g_memoryPools[threadInd].freeList;
+    BlockHeader *&usedList = g_memoryPools[threadInd].usedList;
 
     if (freeList == NULL || freeList->size < size) {
         return NULL;
@@ -295,8 +296,8 @@ __device__ void *poolmalloc(unsigned long size) {
 __device__ void poolfree(void *ptr) {
     // FIXME: placeholder
     unsigned int threadInd = blockIdx.x * blockDim.x + threadIdx.x;
-    BlockHeader *freeList = g_memoryPools[threadInd].freeList;
-    BlockHeader *usedList = g_memoryPools[threadInd].usedList;
+    BlockHeader *&freeList = g_memoryPools[threadInd].freeList;
+    BlockHeader *&usedList = g_memoryPools[threadInd].usedList;
 
     int initFreeListSize = debugListSize(freeList);
     int initUsedListSize = debugListSize(usedList);
@@ -418,8 +419,8 @@ used: |      | 8 | 8 |
 __device__ void printlayout() {
     // FIXME: placeholder
     unsigned int threadInd = blockIdx.x * blockDim.x + threadIdx.x;
-    BlockHeader *freeList = g_memoryPools[threadInd].freeList;
-    BlockHeader *usedList = g_memoryPools[threadInd].usedList;
+    BlockHeader *&freeList = g_memoryPools[threadInd].freeList;
+    BlockHeader *&usedList = g_memoryPools[threadInd].usedList;
 
     BlockHeader const *headers[MAX_BLOCKS];
     for (int i = 0; i < MAX_BLOCKS; i++) {
@@ -445,6 +446,7 @@ __device__ void printlayout() {
     // NOTE: not sure why LSP wants me to cast to BlockHeader** manually
     selectionSort((BlockHeader**)headers, numHeaders);
 
+    printf("THREAD %d:\n", threadInd);
     printf("Memory Layout (total size %d), size not incl headers:\n",
            MEM_POOL_SIZE);
     printf("free: |");
