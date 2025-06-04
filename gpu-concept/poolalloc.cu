@@ -220,7 +220,7 @@ __host__ void freePools(void *ptr) {
 }
 
 __device__ void poolinit(void *poolBlockPtr, unsigned int threadInd) {
-    g_memoryPools[threadInd].memPool = (char *)poolBlockPtr + (threadInd * threadInd);
+    g_memoryPools[threadInd].memPool = (char *)poolBlockPtr + (threadInd * MEM_POOL_SIZE);
     char *memPool = g_memoryPools[threadInd].memPool;
     BlockHeader *freeList = g_memoryPools[threadInd].freeList;
 
@@ -304,7 +304,7 @@ __device__ void poolfree(void *ptr) {
     if (usedList->next == NULL) {
         freeList = NULL;
         usedList = NULL;
-        poolinit(threadInd);
+        poolinit(g_memoryPools[threadInd].memPool, threadInd);
         return;
     }
 

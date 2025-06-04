@@ -24,7 +24,7 @@ __host__ void *allocatePools(unsigned int numThreads);
 
 __host__ void freePools(void *ptr);
 
-__device__ void poolinit(unsigned int threadInd);
+__device__ void poolinit(void *poolBlockPtr, unsigned int threadInd);
 
 __device__ void *poolmalloc(unsigned long size);
 

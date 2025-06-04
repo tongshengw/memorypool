@@ -2,9 +2,9 @@
 #include <cuda_runtime.h>
 #include "poolalloc.cuh"
 
-__global__ void allocate_and_write(int **ptrs, int n) {
-    int idx = threadIdx.x + blockIdx.x * blockDim.x;
-    poolinit(idx);
+__global__ void allocate_and_write(int **ptrs, int n, void *poolMemoryBlock) {
+    unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    poolinit(poolMemoryBlock, idx);
     if (idx < n) {
         int *mem = (int*)poolmalloc(4 * sizeof(int));
         if (mem != NULL) {
@@ -19,7 +19,7 @@ __global__ void allocate_and_write(int **ptrs, int n) {
 }
 
 __global__ void read_and_free(int **ptrs, int n) {
-    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
     if (idx < n && ptrs[idx] != NULL) {
         for (int i = 0; i < 4; ++i) {
             printf("%d ", ptrs[idx][i]);
@@ -34,7 +34,7 @@ int main() {
     cudaMalloc(&d_ptrs, n * sizeof(int*));
 
     void *poolPtr = allocatePools(n);
-    allocate_and_write<<<1, n>>>(d_ptrs, n);
+    allocate_and_write<<<1, n>>>(d_ptrs, n, poolPtr);
     cudaDeviceSynchronize();
 
     read_and_free<<<1, n>>>(d_ptrs, n);
