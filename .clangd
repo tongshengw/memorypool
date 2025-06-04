@@ -35,6 +35,7 @@ CompileFlags:
     - "--generate-code*"
     # strip CUDA flags unknown to clang
     - "-ccbin*"
+    - "-rdc*"
     - "--compiler-options*"
     - "--options-file"
     - "--expt-extended-lambda"

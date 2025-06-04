@@ -209,19 +209,18 @@ __device__ static BlockHeader *getPrevBlockHeader(BlockHeader *header, unsigned 
     return prevBlockHeader;
 }
 
-__host__ void allocatePools(unsigned int numThreads) {
+__host__ void *allocatePools(unsigned int numThreads) {
     char *allocatedBlock;
     cudaMalloc(&allocatedBlock, MEM_POOL_SIZE * numThreads);
-    for (unsigned int i = 0; i < numThreads; i++) {
-        g_memoryPools[i].memPool = allocatedBlock + (i * MEM_POOL_SIZE);
-    }
+    return allocatedBlock;
 }
 
-__host__ void freePools(unsigned int numThreads) {
-    cudaFree(g_memoryPools[0].memPool);
+__host__ void freePools(void *ptr) {
+    cudaFree(ptr);
 }
 
-__device__ void poolinit(unsigned int threadInd) {
+__device__ void poolinit(void *poolBlockPtr, unsigned int threadInd) {
+    g_memoryPools[threadInd].memPool = (char *)poolBlockPtr + (threadInd * threadInd);
     char *memPool = g_memoryPools[threadInd].memPool;
     BlockHeader *freeList = g_memoryPools[threadInd].freeList;
 
@@ -480,7 +479,7 @@ __device__ void printlayout() {
     printf("\n");
 }
 
-void printbytes() {
+__device__ void printbytes() {
     // FIXME: placeholder
     unsigned int threadInd = blockIdx.x * blockDim.x + threadIdx.x;
     char *memPool = g_memoryPools[threadInd].memPool;
@@ -492,5 +491,4 @@ void printbytes() {
         }
     }
     printf("\n");
-    fflush(stdout);
 }

@@ -33,13 +33,13 @@ int main() {
     int **d_ptrs;
     cudaMalloc(&d_ptrs, n * sizeof(int*));
 
-    allocatePools(n);
+    void *poolPtr = allocatePools(n);
     allocate_and_write<<<1, n>>>(d_ptrs, n);
     cudaDeviceSynchronize();
 
     read_and_free<<<1, n>>>(d_ptrs, n);
     cudaDeviceSynchronize();
-    freePools();
+    freePools(poolPtr);
 
     cudaFree(d_ptrs);
     return 0;

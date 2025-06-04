@@ -20,9 +20,9 @@ typedef struct MemoryPool {
     char *memPool;
 } MemoryPool;
 
-__host__ void allocatePools(unsigned int numThreads);
+__host__ void *allocatePools(unsigned int numThreads);
 
-__host__ void freePools();
+__host__ void freePools(void *ptr);
 
 __device__ void poolinit(unsigned int threadInd);
 
