@@ -20,13 +20,21 @@ __global__ void allocate_and_write(int **ptrs, int n, void *poolMemoryBlock) {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
     lock(&pool_lock);
     poolinit(poolMemoryBlock, idx);
+    unlock(&pool_lock);
 
+    lock(&print_lock);
     printlayout();
+    unlock(&print_lock);
 
     if (idx < n) {
 
+        lock(&pool_lock);
         int *mem = (int*)poolmalloc(4 * sizeof(int));
+        unlock(&pool_lock);
+
+        lock(&print_lock);
         printlayout();
+        unlock(&print_lock);
 
         if (mem != NULL) {
             for (int i = 0; i < 4; ++i) {
@@ -37,7 +45,6 @@ __global__ void allocate_and_write(int **ptrs, int n, void *poolMemoryBlock) {
             ptrs[idx] = NULL;
         }
     }
-    unlock(&pool_lock);
 }
 
 __global__ void read_and_free(int **ptrs, int n) {

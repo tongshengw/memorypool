@@ -289,6 +289,8 @@ __device__ void *poolmalloc(unsigned long size) {
     assertFootersValid(freeList);
     assertNoSizeOverflow(freeList);
     assertNoSizeOverflow(usedList);
+    printf("DEBUG: %d, %d\n", debugListSize(freeList), initFreeListSize);
+    printlayout();
     assert(debugListSize(freeList) == initFreeListSize);
     assert(debugListSize(usedList) == initUsedListSize + 1);
     assertFreeListSorted(freeList);
