@@ -221,7 +221,7 @@ __host__ void freePools(void *ptr) {
 }
 
 __device__ void poolinit(void *poolBlockPtr, unsigned int threadInd) {
-    printf("poolinit called %d\n", threadInd);
+    printf("\npoolinit called %d\n", threadInd);
     g_memoryPools[threadInd].memPool = (char *)poolBlockPtr + (threadInd * MEM_POOL_SIZE);
     char *memPool = g_memoryPools[threadInd].memPool;
     BlockHeader *&freeList = g_memoryPools[threadInd].freeList;
@@ -240,6 +240,7 @@ __device__ void poolinit(void *poolBlockPtr, unsigned int threadInd) {
     BlockFooter *footer = getBlockFooter(header);
     footer->headerPtr = header;
     listPrepend(&freeList, header);
+    printlayout();
 }
 
 __device__ void *poolmalloc(unsigned long size) {
@@ -248,7 +249,8 @@ __device__ void *poolmalloc(unsigned long size) {
     
     // FIXME: placholder
     unsigned int threadInd = blockIdx.x * blockDim.x + threadIdx.x;
-    printf("poolmalloc called %d\n", threadInd);
+    printf("\npoolmalloc called %d\n", threadInd);
+    printlayout();
     BlockHeader *&freeList = g_memoryPools[threadInd].freeList;
     BlockHeader *&usedList = g_memoryPools[threadInd].usedList;
 
