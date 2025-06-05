@@ -17,15 +17,11 @@ __device__ void unlock(int *mutex) {
 
 __global__ void allocate_and_write(int **ptrs, int n, void *poolMemoryBlock) {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
-    lock(&pool_lock);
     poolinit(poolMemoryBlock, idx);
-    unlock(&pool_lock);
 
     if (idx < n) {
 
-        lock(&pool_lock);
         int *mem = (int*)poolmalloc(4 * sizeof(int));
-        unlock(&pool_lock);
 
 
         if (mem != NULL) {
