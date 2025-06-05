@@ -2,19 +2,6 @@
 #include <cuda_runtime.h>
 #include "poolalloc.cuh"
 
-__device__ int pool_lock = 0;
-
-__device__ void lock(int *mutex) {
-    while (atomicCAS(mutex, 0, 1) != 0) {
-        // spin
-    }
-}
-
-__device__ void unlock(int *mutex) {
-    atomicExch(mutex, 0);
-}
-
-
 __global__ void allocate_and_write(int **ptrs, int n, void *poolMemoryBlock) {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
     poolinit(poolMemoryBlock, idx);
