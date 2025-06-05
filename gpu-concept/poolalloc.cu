@@ -276,8 +276,9 @@ __device__ void *poolmalloc(unsigned long size) {
     BlockHeader *newFreeHeader =
         (BlockHeader *)((char *)newAllocatedHeader +
                         (sizeof(BlockHeader) + totalSizeAligned));
+    // FIXME: this was wrong before, check this later too (totalSizeAligned vs dataSizeToAllocate)
     newFreeHeader->size =
-        oldBlockSize - (dataSizeToAllocate + sizeof(BlockHeader));
+        oldBlockSize - (totalSizeAligned + sizeof(BlockHeader));
     newFreeHeader->free = true;
     BlockFooter *newFreeFooter = getBlockFooter(newFreeHeader);
     newFreeFooter->headerPtr = newFreeHeader;

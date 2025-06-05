@@ -246,8 +246,11 @@ void *poolmalloc(unsigned long size) {
     BlockHeader *newFreeHeader =
         (BlockHeader *)((char *)newAllocatedHeader +
                         (sizeof(BlockHeader) + totalSizeAligned));
+    // |oldHeader|oldBlockSize|oldFooter|
+    // |newHeader|dat|foot|h|d|newFooter|
+    // FIXME: this was wrong before, check this later too
     newFreeHeader->size =
-        oldBlockSize - (dataSizeToAllocate + sizeof(BlockHeader));
+        oldBlockSize - (totalSizeAligned + sizeof(BlockHeader));
     newFreeHeader->free = true;
     BlockFooter *newFreeFooter = getBlockFooter(newFreeHeader);
     newFreeFooter->headerPtr = newFreeHeader;

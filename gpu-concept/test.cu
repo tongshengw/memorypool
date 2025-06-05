@@ -2,7 +2,6 @@
 #include <cuda_runtime.h>
 #include "poolalloc.cuh"
 
-__device__ int print_lock = 0;
 __device__ int pool_lock = 0;
 
 __device__ void lock(int *mutex) {
@@ -22,19 +21,12 @@ __global__ void allocate_and_write(int **ptrs, int n, void *poolMemoryBlock) {
     poolinit(poolMemoryBlock, idx);
     unlock(&pool_lock);
 
-    lock(&print_lock);
-    printlayout();
-    unlock(&print_lock);
-
     if (idx < n) {
 
         lock(&pool_lock);
         int *mem = (int*)poolmalloc(4 * sizeof(int));
         unlock(&pool_lock);
 
-        lock(&print_lock);
-        printlayout();
-        unlock(&print_lock);
 
         if (mem != NULL) {
             for (int i = 0; i < 4; ++i) {
@@ -61,6 +53,7 @@ __global__ void read_and_free(int **ptrs, int n) {
 int main() {
     int n = 8;
     int **d_ptrs;
+    printf("here");
     cudaMalloc(&d_ptrs, n * sizeof(int*));
 
     void *poolPtr = allocatePools(n);
