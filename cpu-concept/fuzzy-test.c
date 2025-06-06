@@ -88,6 +88,8 @@ void genRandomTestOperationArr(TestOperation *ops, int N) {
 
 void executeTestOperationArr(TestOperation *ops, int N) {
     void *allocatedAddrs[MAX_TEST_SIZE];
+    char *stringData[MAX_TEST_SIZE];
+
     unsigned long bytesAllocated[MAX_TEST_SIZE];
     for (int i = 0; i < MAX_TEST_SIZE; i++) {
         allocatedAddrs[i] = NULL;
@@ -101,10 +103,20 @@ void executeTestOperationArr(TestOperation *ops, int N) {
             allocatedAddrs[i] = poolmalloc(ops[i].numBytes);
             bytesAllocated[i] = ops[i].numBytes;
             assert(allocatedAddrs[i] != NULL);
+
+            for (unsigned int j = 0; j < bytesAllocated[i]; j++) {
+                ((char*)(allocatedAddrs[i]))[j] = 'a';
+            }
+            
             printf("Allocated %lu bytes at (%p)\n", ops[i].numBytes,
                    allocatedAddrs[i]);
         } else {
             void *freedPtr = allocatedAddrs[ops[i].corrospondingAlloc];
+            unsigned int numBytesToCheck = bytesAllocated[ops[i].corrospondingAlloc];
+            for (unsigned int j = 0; j < numBytesToCheck; j++) {
+                // asserts that all the bytes set in the prev alloc is still there
+                assert(((char*)freedPtr)[j] == 'a');
+            }
             poolfree(freedPtr);
             allocatedAddrs[ops[i].corrospondingAlloc] = NULL;
             printf("Freed %lu bytes at (%p)\n",
