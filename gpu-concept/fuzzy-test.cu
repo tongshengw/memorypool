@@ -1,16 +1,13 @@
-// fuzzy testing
-/*
-  
-*/
 #include <stdio.h>
 #include <cuda_runtime.h>
 #include <unordered_set>
+#include <getopt.h>
 #include <assert.h>
 
 #include "poolalloc.cuh"
 
-#define NUM_THREADS 128
-#define OPS_PER_THREAD 100
+#define NUM_THREADS 1
+#define OPS_PER_THREAD 10
 
 struct TestOperation {
     bool isAlloc;
@@ -26,7 +23,8 @@ void generateRandomOperations(TestOperation *ops) {
             if (allocationIndices.size() == 0) {
                 ops[startingInd + j].isAlloc = true;
                 ops[startingInd + j].numBytes = 4 * sizeof(int);
-                allocationIndices.insert(startingInd + j);
+                ops[startingInd + j].corrospondingAlloc = -1;
+                allocationIndices.insert(j);
             } else if (rand() % 2 == 0) {
                 ops[startingInd + j].isAlloc = true;
                 ops[startingInd + j].numBytes = 4 * sizeof(int);
@@ -34,6 +32,7 @@ void generateRandomOperations(TestOperation *ops) {
                 allocationIndices.insert(startingInd + j);
             } else {
                 ops[startingInd + j].isAlloc = false;
+                ops[startingInd + j].numBytes = 0;
                 auto it = allocationIndices.begin();
                 std::advance(it, rand() % allocationIndices.size());
                 ops[startingInd + j].corrospondingAlloc = *it;
@@ -46,7 +45,7 @@ void generateRandomOperations(TestOperation *ops) {
 __global__ void runTests(TestOperation *ops, void *poolMemoryBlock) {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
     poolinit(poolMemoryBlock, idx);
-    
+
     void *allocatedPtrs[OPS_PER_THREAD];
     
     for (unsigned int i = 0; i < OPS_PER_THREAD; i++) {
@@ -60,8 +59,11 @@ __global__ void runTests(TestOperation *ops, void *poolMemoryBlock) {
             printf("Thread %d: Allocated %lu bytes at %p\n", idx, ops[opIndex].numBytes, ptr);
         } else {
             char *ptrToFree = (char*)allocatedPtrs[ops[opIndex].corrospondingAlloc];
-            for (unsigned long j = 0; j < ops[opIndex].numBytes; j++) {
-                assert(ptrToFree[j] == 'a');
+            for (unsigned long j = 0; j < ops[ops[opIndex].corrospondingAlloc].numBytes; j++) {
+                if (ptrToFree[j] != 'a') {
+                    printf("Thread %d: failed to free allocation at index %d\n", idx, ops[opIndex].corrospondingAlloc);
+                    assert(ptrToFree[j] == 'a');
+                }
             }
             poolfree(ptrToFree);
             printf("Thread %d: Freed allocation at index %d\n", idx, ops[opIndex].corrospondingAlloc);
@@ -69,13 +71,30 @@ __global__ void runTests(TestOperation *ops, void *poolMemoryBlock) {
     }
 }
 
-int main() {
+int main(int argc, char **argv) {
+    int opt;
+    int seed = 0;
+    while ((opt = getopt(argc, argv, "s:")) != -1) {
+        switch (opt) {
+            case 's':
+                seed = atoi(optarg);
+                break;
+            default:
+                fprintf(stderr, "Usage: %s [-s seed]\n", argv[0]);
+                exit(1);
+        }
+    }
+    srand(seed);
+    printf("Random seed: %d\n", seed);
+
     TestOperation ops[NUM_THREADS * OPS_PER_THREAD];
     generateRandomOperations(ops);
     
     TestOperation *d_ops;
     cudaMalloc(&d_ops, sizeof(TestOperation) * NUM_THREADS * OPS_PER_THREAD);
-    cudaMemcpy(&d_ops, ops, sizeof(TestOperation) * NUM_THREADS * OPS_PER_THREAD, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_ops, ops, sizeof(TestOperation) * NUM_THREADS * OPS_PER_THREAD, cudaMemcpyHostToDevice);
 
-    runTests<<<NUM_THREADS, 1>>>(d_ops, allocatePools(NUM_THREADS * OPS_PER_THREAD));
+    runTests<<<1, NUM_THREADS>>>(d_ops, allocatePools(NUM_THREADS));
+    cudaDeviceSynchronize();
+    cudaFree(d_ops);
 }

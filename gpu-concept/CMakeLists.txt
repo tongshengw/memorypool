@@ -14,3 +14,9 @@ target_include_directories(fuzzy-gpu PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE
 set_target_properties(fuzzy-gpu PROPERTIES
     CUDA_SEPARABLE_COMPILATION ON
 )
+
+add_custom_command(TARGET fuzzy-gpu POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+    ${CMAKE_CURRENT_SOURCE_DIR}/fuzzy-script.py
+    $<TARGET_FILE_DIR:fuzzy-gpu>/fuzzy-script.py
+)
