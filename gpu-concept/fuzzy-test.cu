@@ -6,7 +6,7 @@
 
 #include "poolalloc.cuh"
 
-#define NUM_THREADS 1
+#define NUM_THREADS 4
 #define OPS_PER_THREAD 10
 
 struct TestOperation {
