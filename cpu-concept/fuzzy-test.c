@@ -108,6 +108,8 @@ void executeTestOperationArr(TestOperation *ops, int N) {
                 ((char*)(allocatedAddrs[i]))[j] = 'a';
             }
             
+            // assert alignment
+            assert(((unsigned long)allocatedAddrs[i] % 16) == 0);
             printf("Allocated %lu bytes at (%p)\n", ops[i].numBytes,
                    allocatedAddrs[i]);
         } else {
