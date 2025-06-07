@@ -259,6 +259,7 @@ __device__ void *poolmalloc(unsigned long size) {
 
     unsigned long oldBlockSize = freeList->size;
     BlockHeader *newAllocatedHeader = freeList;
+    // FIXME: divisible by 16 gets rounded up
     unsigned long dataSizeToAllocate = size + (16 - size % 16);
     unsigned long totalSizeUnaligned = dataSizeToAllocate + sizeof(BlockFooter);
     unsigned long totalSizeAligned =
