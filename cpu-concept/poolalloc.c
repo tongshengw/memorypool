@@ -5,7 +5,7 @@
 
 #include "poolalloc.h"
 
-#define MEM_POOL_SIZE 64000
+#define MEM_POOL_SIZE 16000
 // NOTE: MAX_BLOCKS is for printlayout function, as a buffer is created
 // statically, could change to dynamic
 #define MAX_BLOCKS 100

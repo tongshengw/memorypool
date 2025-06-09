@@ -42,12 +42,29 @@ void generateRandomOperations(TestOperation *ops) {
     }
 }
 
+// Simple global spinlock for serialization
+__device__ int global_lock = 0;
+
+__device__ void acquire_lock(int *lock) {
+    while (atomicCAS(lock, 0, 1) != 0) {
+        // spin
+    }
+    __threadfence();
+}
+
+__device__ void release_lock(int *lock) {
+    __threadfence();
+    atomicExch(lock, 0);
+}
+
 __global__ void runTests(TestOperation *ops, void *poolMemoryBlock) {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
     poolinit(poolMemoryBlock, idx);
 
     void *allocatedPtrs[OPS_PER_THREAD];
-    
+
+    // acquire_lock(&global_lock);
+
     for (unsigned int i = 0; i < OPS_PER_THREAD; i++) {
         unsigned int opIndex = idx * OPS_PER_THREAD + i;
         if (ops[opIndex].isAlloc) {
@@ -69,6 +86,8 @@ __global__ void runTests(TestOperation *ops, void *poolMemoryBlock) {
             printf("Thread %d: Freed allocation at index %d\n", idx, ops[opIndex].corrospondingAlloc);
         }
     }
+
+    // release_lock(&global_lock);
 }
 
 int main(int argc, char **argv) {

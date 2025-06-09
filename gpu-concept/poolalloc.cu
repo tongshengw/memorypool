@@ -30,6 +30,10 @@
 // TODO: placeholder for now, might be able to reduce memory overhead
 __device__ MemoryPool g_memoryPools[MAX_THREADS];
 
+__device__ static BlockFooter *getBlockFooter(BlockHeader *header) {
+    return (BlockFooter *)((char *)header + sizeof(BlockHeader) + header->size);
+}
+
 // NOTE:: Debug functions
 __device__ static int debugListSize(BlockHeader *head) {
     int size = 0;
@@ -88,9 +92,9 @@ __device__ static void assertFreeListSorted(BlockHeader *head) {
 
 __device__ static void assertFootersValid(BlockHeader *head) {
     while (head) {
-        char *tmp = (char *)head;
-        BlockFooter *footer =
-            (BlockFooter *)(tmp + sizeof(BlockHeader) + head->size);
+        // BlockFooter *footer =
+            // (BlockFooter *)(tmp + sizeof(BlockHeader) + head->size);
+        BlockFooter *footer = getBlockFooter(head);
         assert(footer->headerPtr == head);
         head = head->next;
     }
@@ -159,9 +163,6 @@ __device__ static void listSwapHeadSort(BlockHeader **head) {
     }
 }
 
-__device__ static BlockFooter *getBlockFooter(BlockHeader *header) {
-    return (BlockFooter *)((char *)header + sizeof(BlockHeader) + header->size);
-}
 
 __device__ int dataBytes(BlockHeader *head) {
     int tally = 0;

@@ -140,11 +140,12 @@ int main(int argc, char *argv[]) {
     int opt;
 
     if (argc < 7) {
-        printf("Usage: %s -t int -b int -n int\n", argv[0]);
+        printf("Usage: %s -t int -b int -n int -s int\n", argv[0]);
         fflush(stdout);
         exit(1);
     }
-    while ((opt = getopt(argc, argv, "t:b:n:")) != -1) {
+    int seed = -1;
+    while ((opt = getopt(argc, argv, "t:b:n:s:")) != -1) {
         switch (opt) {
         case 't':
             MAX_TEST_SIZE = atoi(optarg);
@@ -155,12 +156,17 @@ int main(int argc, char *argv[]) {
         case 'n':
             NUM_TESTS = atoi(optarg);
             break;
+        case 's':
+            seed = atoi(optarg);
+            break;
         default:
-            printf("Usage: %s -t int -b int -n int\n", argv[0]);
+            printf("Usage: %s -t int -b int -n int -s int\n", argv[0]);
             fflush(stdout);
             exit(1);
         }
     }
+
+    srand(seed);
 
     poolinit();
 
