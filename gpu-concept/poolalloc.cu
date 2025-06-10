@@ -246,8 +246,6 @@ __device__ void poolinit(void *poolBlockPtr, unsigned int threadInd) {
 __device__ void *poolmalloc(unsigned long size) {
     // all pointer arithmetic is done on char* for clarity
     // TODO: handle edge case where last alloc takes space of last header
-    
-    // FIXME: placholder
     unsigned int threadInd = blockIdx.x * blockDim.x + threadIdx.x;
     BlockHeader *&freeList = g_memoryPools[threadInd].freeList;
     BlockHeader *&usedList = g_memoryPools[threadInd].usedList;
@@ -261,7 +259,6 @@ __device__ void *poolmalloc(unsigned long size) {
 
     unsigned long oldBlockSize = freeList->size;
     BlockHeader *newAllocatedHeader = freeList;
-    // FIXME: divisible by 16 gets rounded up
     // unsigned long dataSizeToAllocate = size + (16 - size % 16);
     unsigned long dataSizeToAllocate = ((size + 15) / 16) * 16;
     unsigned long totalSizeUnaligned = dataSizeToAllocate + sizeof(BlockFooter);
@@ -300,7 +297,6 @@ __device__ void *poolmalloc(unsigned long size) {
 }
 
 __device__ void poolfree(void *ptr) {
-    // FIXME: placeholder
     unsigned int threadInd = blockIdx.x * blockDim.x + threadIdx.x;
     BlockHeader *&freeList = g_memoryPools[threadInd].freeList;
     BlockHeader *&usedList = g_memoryPools[threadInd].usedList;
@@ -423,7 +419,6 @@ used: |      | 8 | 8 |
 
 // NOTE: is likely very slow because of single threaded selection sort, but keeping for simplicity for now
 __device__ void printlayout() {
-    // FIXME: placeholder
     unsigned int threadInd = blockIdx.x * blockDim.x + threadIdx.x;
     BlockHeader *&freeList = g_memoryPools[threadInd].freeList;
     BlockHeader *&usedList = g_memoryPools[threadInd].usedList;
@@ -488,7 +483,6 @@ __device__ void printlayout() {
 }
 
 __device__ void printbytes() {
-    // FIXME: placeholder
     unsigned int threadInd = blockIdx.x * blockDim.x + threadIdx.x;
     char *memPool = g_memoryPools[threadInd].memPool;
     printf("\nBytes:\n");
