@@ -30,6 +30,10 @@
 // TODO: placeholder for now, might be able to reduce memory overhead
 __device__ MemoryPool g_memoryPools[MAX_THREADS];
 
+__device__ static BlockFooter *getBlockFooter(BlockHeader *header) {
+    return (BlockFooter *)((char *)header + sizeof(BlockHeader) + header->size);
+}
+
 // NOTE:: Debug functions
 __device__ static int debugListSize(BlockHeader *head) {
     int size = 0;
@@ -88,9 +92,9 @@ __device__ static void assertFreeListSorted(BlockHeader *head) {
 
 __device__ static void assertFootersValid(BlockHeader *head) {
     while (head) {
-        char *tmp = (char *)head;
-        BlockFooter *footer =
-            (BlockFooter *)(tmp + sizeof(BlockHeader) + head->size);
+        // BlockFooter *footer =
+            // (BlockFooter *)(tmp + sizeof(BlockHeader) + head->size);
+        BlockFooter *footer = getBlockFooter(head);
         assert(footer->headerPtr == head);
         head = head->next;
     }
@@ -159,9 +163,6 @@ __device__ static void listSwapHeadSort(BlockHeader **head) {
     }
 }
 
-__device__ static BlockFooter *getBlockFooter(BlockHeader *header) {
-    return (BlockFooter *)((char *)header + sizeof(BlockHeader) + header->size);
-}
 
 __device__ int dataBytes(BlockHeader *head) {
     int tally = 0;
@@ -182,7 +183,8 @@ __device__ int headerBytes(BlockHeader *head) {
 }
 
 __device__ static int getFooterAlignedSize() {
-    return sizeof(BlockFooter) + (16 - sizeof(BlockFooter) % 16);
+    // return sizeof(BlockFooter) + (16 - sizeof(BlockFooter) % 16);
+    return ((sizeof(BlockFooter) + 15) / 16) * 16;
 }
 
 __device__ static BlockHeader *getNextBlockHeader(BlockHeader *header, unsigned int threadInd) {
@@ -259,10 +261,13 @@ __device__ void *poolmalloc(unsigned long size) {
 
     unsigned long oldBlockSize = freeList->size;
     BlockHeader *newAllocatedHeader = freeList;
-    unsigned long dataSizeToAllocate = size + (16 - size % 16);
+    // FIXME: divisible by 16 gets rounded up
+    // unsigned long dataSizeToAllocate = size + (16 - size % 16);
+    unsigned long dataSizeToAllocate = ((size + 15) / 16) * 16;
     unsigned long totalSizeUnaligned = dataSizeToAllocate + sizeof(BlockFooter);
     unsigned long totalSizeAligned =
-        totalSizeUnaligned + (16 - totalSizeUnaligned % 16);
+        // totalSizeUnaligned + (16 - totalSizeUnaligned % 16);
+        ((totalSizeUnaligned + 15) / 16) * 16;
     newAllocatedHeader->size = dataSizeToAllocate;
     BlockFooter *newAllocatedFooter = getBlockFooter(newAllocatedHeader);
     newAllocatedFooter->headerPtr = newAllocatedHeader;
@@ -306,7 +311,7 @@ __device__ void poolfree(void *ptr) {
     if (usedList->next == NULL) {
         freeList = NULL;
         usedList = NULL;
-        poolinit(g_memoryPools[threadInd].memPool, threadInd);
+        poolinit(g_memoryPools[0].memPool, threadInd);
         return;
     }
 

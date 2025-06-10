@@ -1,16 +1,19 @@
 #!/bin/bash
-numTests=(1 2 3 4 5 6 7 8 9 16)
-bytesMax=(128 1 2 3 4 5 6 7 8 9 16 32)
-testOps=(128 1 2 3 4 5 6 7 8 9 16 32)
+numTests=(1)
+bytesMax=(128)
+testOps=(128)
+seeds=($(seq 0 2000))
 echo "checking all combinations"
 for a in "${testOps[@]}"; do
     for b in "${bytesMax[@]}"; do
       for c in "${numTests[@]}"; do
-        if gtimeout 3 ./fuzzy -t $a -b $b -n $c > log.out; then
+        for s in "${seeds[@]}"; do
+          if timeout 3 ./fuzzy-cpu -t $a -b $b -n $c -s $s > log.out; then
           :
         else
-          echo "##### caused timeout with input: -t$a -b$b -n$c"
-        fi
+            echo "##### caused timeout with input: -t$a -b$b -n$c -s$s"
+          fi
+        done
       done
     done
 done

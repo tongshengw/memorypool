@@ -13,6 +13,7 @@ ctest
 ```
 
 ## FIX
+- fuzzy-gpu fails with 4 threads, 10 ops, 3 seed
 - somehow bug when numtests is 128, look into this
 
 ## todo
