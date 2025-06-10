@@ -29,7 +29,7 @@ void generateRandomOperations(TestOperation *ops) {
                 ops[startingInd + j].isAlloc = true;
                 ops[startingInd + j].numBytes = 4 * sizeof(int);
                 ops[startingInd + j].corrospondingAlloc = -1;
-                allocationIndices.insert(startingInd + j);
+                allocationIndices.insert(j);
             } else {
                 ops[startingInd + j].isAlloc = false;
                 ops[startingInd + j].numBytes = 0;
@@ -59,11 +59,11 @@ __device__ void release_lock(int *lock) {
 
 __global__ void runTests(TestOperation *ops, void *poolMemoryBlock) {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    // acquire_lock(&global_lock);
+
     poolinit(poolMemoryBlock, idx);
 
     void *allocatedPtrs[OPS_PER_THREAD];
-
-    // acquire_lock(&global_lock);
 
     for (unsigned int i = 0; i < OPS_PER_THREAD; i++) {
         unsigned int opIndex = idx * OPS_PER_THREAD + i;
@@ -108,6 +108,18 @@ int main(int argc, char **argv) {
 
     TestOperation ops[NUM_THREADS * OPS_PER_THREAD];
     generateRandomOperations(ops);
+
+    for (int i = 0; i < NUM_THREADS; i++) {
+        printf("Thread %d operations:\n", i);
+        for (int j = 0; j < OPS_PER_THREAD; j++) {
+            int idx = i * OPS_PER_THREAD + j;
+            printf("  Op %d: %s, numBytes=%lu, corrospondingAlloc=%d\n",
+                   j,
+                   ops[idx].isAlloc ? "ALLOC" : "FREE",
+                   ops[idx].numBytes,
+                   ops[idx].corrospondingAlloc);
+        }
+    }
     
     TestOperation *d_ops;
     cudaMalloc(&d_ops, sizeof(TestOperation) * NUM_THREADS * OPS_PER_THREAD);
