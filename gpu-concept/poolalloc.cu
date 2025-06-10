@@ -183,7 +183,8 @@ __device__ int headerBytes(BlockHeader *head) {
 }
 
 __device__ static int getFooterAlignedSize() {
-    return sizeof(BlockFooter) + (16 - sizeof(BlockFooter) % 16);
+    // return sizeof(BlockFooter) + (16 - sizeof(BlockFooter) % 16);
+    return ((sizeof(BlockFooter) + 15) / 16) * 16;
 }
 
 __device__ static BlockHeader *getNextBlockHeader(BlockHeader *header, unsigned int threadInd) {
@@ -261,10 +262,12 @@ __device__ void *poolmalloc(unsigned long size) {
     unsigned long oldBlockSize = freeList->size;
     BlockHeader *newAllocatedHeader = freeList;
     // FIXME: divisible by 16 gets rounded up
-    unsigned long dataSizeToAllocate = size + (16 - size % 16);
+    // unsigned long dataSizeToAllocate = size + (16 - size % 16);
+    unsigned long dataSizeToAllocate = ((size + 15) / 16) * 16;
     unsigned long totalSizeUnaligned = dataSizeToAllocate + sizeof(BlockFooter);
     unsigned long totalSizeAligned =
-        totalSizeUnaligned + (16 - totalSizeUnaligned % 16);
+        // totalSizeUnaligned + (16 - totalSizeUnaligned % 16);
+        ((totalSizeUnaligned + 15) / 16) * 16;
     newAllocatedHeader->size = dataSizeToAllocate;
     BlockFooter *newAllocatedFooter = getBlockFooter(newAllocatedHeader);
     newAllocatedFooter->headerPtr = newAllocatedHeader;

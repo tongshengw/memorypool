@@ -6,8 +6,8 @@
 
 #include "poolalloc.cuh"
 
-#define NUM_THREADS 3
-#define OPS_PER_THREAD 2
+#define NUM_THREADS 128
+#define OPS_PER_THREAD 30
 
 __device__ extern MemoryPool g_memoryPools[1024];
 
