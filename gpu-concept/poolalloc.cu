@@ -308,7 +308,7 @@ __device__ void poolfree(void *ptr) {
     if (usedList->next == NULL) {
         freeList = NULL;
         usedList = NULL;
-        poolinit(g_memoryPools[threadInd].memPool, threadInd);
+        poolinit(g_memoryPools[0].memPool, threadInd);
         return;
     }
 
