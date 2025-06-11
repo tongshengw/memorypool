@@ -10,17 +10,14 @@ __global__ void test_linalg_kernel() {
 }
 
 void run_linalg_tests() {
-    // Launch kernel with single thread since tests are independent
-    test_linalg_kernel<<<1,1>>>();
+    test_linalg_kernel<<<1, 256>>>();
     
-    // Check for kernel launch errors
     cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess) {
         fprintf(stderr, "Kernel launch failed: %s\n", cudaGetErrorString(err));
         exit(1);
     }
 
-    // Wait for GPU to finish
     err = cudaDeviceSynchronize();
     if (err != cudaSuccess) {
         fprintf(stderr, "CUDA error after kernel execution: %s\n", cudaGetErrorString(err));
