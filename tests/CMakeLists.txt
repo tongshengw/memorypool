@@ -8,7 +8,7 @@ target_compile_definitions(linalg-pool-test PRIVATE USE_POOL)
 target_link_libraries(linalg-pool-test PRIVATE linalg-pool PRIVATE poolalloc-cpu)
 
 add_executable(linalg-gpu-test linalg-gpu.cu)
-target_include_directories(linalg-gpu-test PUBLIC ${CMAKE_SOURCE_DIR}/linalg PUBLIC ${CMAKE_SOURCE_DIR}/gpu-concept)
+target_include_directories(linalg-gpu-test PUBLIC ${CMAKE_SOURCE_DIR}/linalg PUBLIC ${CMAKE_SOURCE_DIR}/gpu-concept ${CMAKE_SOURCE_DIR}/macros)
 target_compile_definitions(linalg-gpu-test PRIVATE USE_GPU)
 target_link_libraries(linalg-gpu-test PRIVATE linalg-gpu PRIVATE poolalloc-gpu)
 

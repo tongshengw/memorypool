@@ -1,6 +1,6 @@
 add_library(linalg-ref STATIC leastsq_kkt.c leastsq.c lubksb.c ludcmp.c luminv.c mmdot.c mvdot.c vvdot.c)
 target_include_directories(linalg-ref PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-PUBLIC ${CMAKE_SOURCE_DIR}/macros
+    PUBLIC ${CMAKE_SOURCE_DIR}/macros
 )
 target_link_libraries(linalg-ref PUBLIC macros)
 

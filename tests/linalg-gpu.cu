@@ -182,7 +182,7 @@ __host__ __device__ void test_leastsq_kkt()
   int max_iter = 20;
   int err = leastsq_kkt(b, a, c, d, n1, n2, n3, neq, &max_iter);
   if (err != 0) {
-    fprintf(stderr, "Error in leastsq_kkt: %d\n", err);
+    printf("Error in leastsq_kkt: %d\n", err);
   }
   
   // printf("Constrained least squares solution: \n");
@@ -197,10 +197,4 @@ __host__ __device__ void test_leastsq_kkt()
     assert(fabs(b[i] - expected[i]) < 0.0001);
   }
   assert(max_iter == 1);
-}
-
-int main() {
-    run_linalg_tests();
-    printf("All GPU tests passed!\n");
-    return 0;
 }

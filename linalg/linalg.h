@@ -5,13 +5,14 @@ extern "C" {
 #endif
 
 #include <mallocmacro.h>
+#include <cudamacro.h>
 
 /*! 
  * \brief vector-vector dot product: a.b
  * \param[in] a[0..n-1] first vector
  * \param[in] b[0..n-1] second vector
  */
-double vvdot(double const *a, double const *b, int n);
+HD double vvdot(double const *a, double const *b, int n);
 
 /*! 
  * \brief matrix-vector dot product: m.v
@@ -21,7 +22,7 @@ double vvdot(double const *a, double const *b, int n);
  * \param[in] n1 number of rows in matrix
  * \param[in] n2 number of columns in matrix
  */
-void mvdot(double *r, double const *m, double const *v, int n1, int n2);
+HD void mvdot(double *r, double const *m, double const *v, int n1, int n2);
 
 /*! 
  * \brief matrix-matrix dot product: a.b
@@ -32,7 +33,7 @@ void mvdot(double *r, double const *m, double const *v, int n1, int n2);
  * \param[in] n2 number of columns in matrix a (and rows in matrix b)
  * \param[in] n3 number of columns in matrix b
  */
-void mmdot(double *r, double const *a, double const *b, int n1, int n2, int n3);
+HD void mmdot(double *r, double const *a, double const *b, int n1, int n2, int n3);
 
 /*! 
  * \brief LU decomposition
@@ -48,8 +49,7 @@ void mmdot(double *r, double const *a, double const *b, int n1, int n2, int n3);
  *             of row interchanges was even or odd, respectively. 
  * \param[in] n size of matrix
  */
-int ludcmp(double *a, int *indx, int n);
-int ludcmp_pool(double *a, int *indx, int n);
+HD int ludcmp(double *a, int *indx, int n);
 
 /*! 
  * \brief Solves the set of n linear equations A.X = B. 
@@ -65,7 +65,7 @@ int ludcmp_pool(double *a, int *indx, int n);
  * \param[in] indx[0..n-1] input the permutation vector returned by ludcmp.
  * \param[in] n size of matrix
  */
-void lubksb(double *b, double const *a, int const *indx, int n);
+HD void lubksb(double *b, double const *a, int const *indx, int n);
 
 /*! 
  * \brief invert a matrix, Y = A^{-1}
@@ -79,8 +79,7 @@ void lubksb(double *b, double const *a, int const *indx, int n);
  * \param[in] indx[0..n-1] the permutation vector returned by ludcmp.
  * \param[in] n size of matrix
  */
-void luminv(double *y, double const *a, int const *indx, int n);
-void luminv_pool(double *y, double const *a, int const *indx, int n);
+HD void luminv(double *y, double const *a, int const *indx, int n);
 
 /*! 
  * \brief solve least square problem min ||A.x - b||
@@ -91,8 +90,7 @@ void luminv_pool(double *y, double const *a, int const *indx, int n);
  * \param[in] n1 number of rows in matrix
  * \param[in] n2 number of columns in matrix
  */
-void leastsq(double *b, double const *a, int n1, int n2);
-void leastsq_pool(double *b, double const *a, int n1, int n2);
+HD void leastsq(double *b, double const *a, int n1, int n2);
 
 /*!
  * \brief solve constrained least square problem: min ||A.x - b||, s.t. C.x <= d
@@ -116,11 +114,8 @@ void leastsq_pool(double *b, double const *a, int n1, int n2);
  * \return 0 on success, 1 on invalid input (e.g., neq < 0 or neq > n3),
  *         2 on failure (max_iter reached without convergence).
  */
-int leastsq_kkt(double *b, double const *a, double const *c, double const *d,
+HD int leastsq_kkt(double *b, double const *a, double const *c, double const *d,
                 int n1, int n2, int n3, int neq, int *max_iter);
-int leastsq_kkt_pool(double *b, double const *a, double const *c,
-                     double const *d, int n1, int n2, int n3, int neq,
-                     int *max_iter);
 
 #ifdef __cplusplus
 } /* extern "C" */
