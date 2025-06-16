@@ -1,9 +1,15 @@
-#pragma once
+#ifndef LINALG_H
+#define LINALG_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <string.h>
+#include <assert.h>
 #include <cudamacro.h>
 #include <mallocmacro.h>
 
@@ -52,7 +58,7 @@ HD void mmdot(double *r, double const *a, double const *b, int n1, int n2,
  * \param[in] n size of matrix
  */
 #define A(i, j) a[(i) * n + (j)]
-HD int ludcmp(double *a, int *indx, int n) {
+HD static inline int ludcmp(double *a, int *indx, int n) {
   int i, imax, j, k, d;
   double big, dum, sum, temp;
   double *vv = (double *)malloc(n * sizeof(double));
@@ -64,8 +70,7 @@ HD int ludcmp(double *a, int *indx, int n) {
       if ((temp = fabs(A(i, j))) > big)
         big = temp;
     if (big == 0.0) {
-      fprintf(stderr, "Singular matrix in routine ludcmp");
-      exit(1);
+      printf("Singular matrix in routine ludcmp");
     }
     vv[i] = 1.0 / big;
   }
@@ -123,7 +128,7 @@ HD int ludcmp(double *a, int *indx, int n) {
  * \param[in] indx[0..n-1] input the permutation vector returned by ludcmp.
  * \param[in] n size of matrix
  */
-HD void lubksb(double *b, double const *a, int const *indx, int n) {
+HD static inline void lubksb(double *b, double const *a, int const *indx, int n) {
   int i, ii = 0, ip, j;
   double sum;
 
@@ -158,7 +163,7 @@ HD void lubksb(double *b, double const *a, int const *indx, int n) {
  * \param[in] indx[0..n-1] the permutation vector returned by ludcmp.
  * \param[in] n size of matrix
  */
-HD void luminv(double *y, double const *a, int const *indx, int n) {
+HD static inline void luminv(double *y, double const *a, int const *indx, int n) {
   double *col = (double *)malloc(n * sizeof(double));
   for (int j = 0; j < n; j++) {
     for (int i = 0; i < n; i++)
@@ -180,7 +185,7 @@ HD void luminv(double *y, double const *a, int const *indx, int n) {
  * \param[in] n1 number of rows in matrix
  * \param[in] n2 number of columns in matrix
  */
-HD void leastsq(double *b, double const *a, int n1, int n2) {
+HD static inline void leastsq(double *b, double const *a, int n1, int n2) {
   double *c = (double *)malloc(n1 * sizeof(double));
   memcpy(c, b, n1 * sizeof(double));
 
@@ -210,7 +215,11 @@ HD void leastsq(double *b, double const *a, int n1, int n2) {
   free(y);
 }
 
-void populate_aug(double *aug, double const *ata, double const *c, int n2,
+#define A(i, j) a[(i) * n2 + (j)]
+#define ATA(i, j) ata[(i) * n2 + (j)]
+#define AUG(i, j) aug[(i) * (n2 + nact) + (j)]
+#define C(i, j) c[(i) * n2 + (j)]
+HD static inline void populate_aug(double *aug, double const *ata, double const *c, int n2,
                   int nact, int const *ct_indx) {
   // populate A^T.A (upper left block)
   for (int i = 0; i < n2; ++i) {
@@ -241,7 +250,7 @@ void populate_aug(double *aug, double const *ata, double const *c, int n2,
   }
 }
 
-void populate_rhs(double *rhs, double const *atb, double const *d, int n2,
+HD static inline void populate_rhs(double *rhs, double const *atb, double const *d, int n2,
                   int nact, int const *ct_indx) {
   // populate A^T.b (upper part)
   for (int i = 0; i < n2; ++i) {
@@ -275,23 +284,18 @@ void populate_rhs(double *rhs, double const *atb, double const *d, int n2,
  * \return 0 on success, 1 on invalid input (e.g., neq < 0 or neq > n3),
  *         2 on failure (max_iter reached without convergence).
  */
-#define A(i, j) a[(i) * n2 + (j)]
-#define ATA(i, j) ata[(i) * n2 + (j)]
-#define AUG(i, j) aug[(i) * (n2 + nact) + (j)]
-#define C(i, j) c[(i) * n2 + (j)]
-HD int leastsq_kkt(double *b, double const *a, double const *c, double const *d,
+HD static inline int leastsq_kkt(double *b, double const *a, double const *c, double const *d,
                    int n1, int n2, int n3, int neq, int *max_iter) {
   // check if n1 > 0, n2 > 0, n3 >= 0
   if (n1 <= 0 || n2 <= 0 || n3 < 0 || n1 < n2) {
-    fprintf(
-        stderr,
+    printf(
         "Error: n1 and n2 must be positive integers and n3 >= 0, n1 >= n2.\n");
     return 1; // invalid input
   }
 
   // check if 0 <= neq <= n3
   if (neq < 0 || neq > n3) {
-    fprintf(stderr, "Error: neq must be non-negative.\n");
+    printf("Error: neq must be non-negative.\n");
     return 1; // invalid input
   }
 
@@ -483,3 +487,5 @@ HD int leastsq_kkt(double *b, double const *a, double const *c, double const *d,
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
+
+#endif // LINALG_H

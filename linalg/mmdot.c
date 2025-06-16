@@ -2,7 +2,7 @@
 
 #include "linalg.h"
 
-void mmdot(double *r, double const *a, double const *b, int n1, int n2, int n3) {
+HD inline void mmdot(double *r, double const *a, double const *b, int n1, int n2, int n3) {
   // Check if r, a, and b are not the same
   if (r == a || r == b || a == b) {
     fprintf(stderr, "Error: r, a, and b must be distinct pointers.\n");
