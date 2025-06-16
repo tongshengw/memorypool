@@ -1,6 +1,7 @@
 #include <assert.h>
+#include "linalg.h"
 
-void mvdot(double *r, double const *m, double const *v, int n1, int n2) {
+HD void mvdot(double *r, double const *m, double const *v, int n1, int n2) {
   assert(r != v);  // r and v cannot be the same
   for (int i = 0; i < n1; ++i) {
     r[i] = 0.;
