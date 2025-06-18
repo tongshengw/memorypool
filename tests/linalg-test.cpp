@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <linalg.h>
+#include <configure.h>
+#include <memorypool/math/linalg.h>
 
 // test vvdot
 // TODO: could change errors to exit(1) for better ctest
@@ -402,9 +403,9 @@ void test_leastsq_kkt_large()
 
 int main(int argc, char *argv[])
 {
-  #ifdef USE_POOL
+#ifdef USE_MEMORY_POOL
   poolinit();
-  #endif
+#endif
   test_vvdot();
   test_mvdot();
   test_mmdot();

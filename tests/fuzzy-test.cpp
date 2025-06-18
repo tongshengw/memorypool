@@ -1,9 +1,9 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include<getopt.h>
+#include <getopt.h>
 
-#include "./poolalloc.h"
+#include <poolalloc.h>
 
 // #define MAX_TEST_SIZE 20
 // #define MAX_BYTES_PER_ALLOC 16

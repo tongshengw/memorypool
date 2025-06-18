@@ -3,9 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../cpu-concept/poolalloc.h"
-#include "linalg.h"
-#include "volume-test.h"
+#include <memorypool/cpu/poolalloc.h>
+#include <memorypool/math/linalg.h>
+
+#define NUM_TESTS 100000
 
 void test_vol_leastsq_kkt_large() {
     int n1 = 184; // number of rows

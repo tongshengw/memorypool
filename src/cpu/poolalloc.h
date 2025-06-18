@@ -1,5 +1,8 @@
-#ifndef CPU_POOLALLOC_H
-#define CPU_POOLALLOC_H
+#pragma once
+
+#ifdef __cplusplus
+extern "C" {
+#endif 
 
 #include <stdbool.h>
 
@@ -28,4 +31,7 @@ int dataBytes(BlockHeader *head);
 
 int headerBytes(BlockHeader *head);
 
-#endif  // CPU_POOLALLOC_H
+#ifdef __cplusplus
+} /* extern "C" */
+#endif 
+
