@@ -1,7 +1,7 @@
 # define default parameters
 
 # whether to use memory pool
-if(NOT MEMORY_POOL OR NOT DEFINED MEMORY_POOL)
+if(NOT MEMPOOL OR NOT DEFINED MEMPOOL)
   set(MEMORY_POOL_OPTION "NOT_USE_MEMORY_POOL")
 else()
   set(MEMORY_POOL_OPTION "USE_MEMORY_POOL")
