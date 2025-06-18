@@ -1,7 +1,6 @@
-#include <stdlib.h>
-#include <string.h>
+#pragma once
 
-#include "linalg.h"
+#include <string.h>
 
 #include <configure.h>
 

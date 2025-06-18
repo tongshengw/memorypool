@@ -1,4 +1,4 @@
-#include "linalg.h"
+#pragma once
 
 /*!
  * \brief vector-vector dot product: a.b

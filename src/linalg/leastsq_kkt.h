@@ -1,7 +1,8 @@
-#include <stdio.h>
-#include <stdlib.h>
+#pragma once
 
-#include "linalg.h"
+#include <stdio.h>
+
+#include <configure.h>
 
 #define A(i, j) a[(i) * n2 + (j)]
 #define ATA(i, j) ata[(i) * n2 + (j)]

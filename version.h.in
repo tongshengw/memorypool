@@ -1,0 +1,3 @@
+#pragma once
+
+#define MEMORYPOOL_VERSION "@PROJECT_VERSION@"

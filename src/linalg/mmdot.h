@@ -1,6 +1,6 @@
-#include <stdio.h>
+#pragma once
 
-#include "linalg.h"
+#include <stdio.h>
 
 /*!
  * \brief matrix-matrix dot product: a.b

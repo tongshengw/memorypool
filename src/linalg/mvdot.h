@@ -1,5 +1,6 @@
+#pragma once
+
 #include <assert.h>
-#include "linalg.h"
 
 /*!
  * \brief matrix-vector dot product: m.v
