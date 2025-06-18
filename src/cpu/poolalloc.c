@@ -367,8 +367,8 @@ free: | 1028 |       | 8 \
 used: |      | 8 | 8 |
 */
 void printlayout() {
-    BlockHeader const *headers[MAX_BLOCKS];
-    for (int i = 0; i < MAX_BLOCKS; i++) {
+    BlockHeader const *headers[MEM_MAX_BLOCKS];
+    for (int i = 0; i < MEM_MAX_BLOCKS; i++) {
         headers[i] = NULL;
     }
 

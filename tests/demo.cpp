@@ -1,4 +1,5 @@
-#include <cpu/poolalloc.h>
+#include <cstdlib>
+#include <memorypool/cpu/poolalloc.h>
 
 void test_alloc_ints() {
     int *ptrs[14];

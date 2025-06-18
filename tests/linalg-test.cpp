@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <configure.h>
+#include <memorypool/alloc.h>
 #include <memorypool/math/linalg.h>
 
 // test vvdot

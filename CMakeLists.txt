@@ -81,8 +81,15 @@ message(STATUS "Include ${CMAKE_CURRENT_SOURCE_DIR}/cmake/compilers.cmake")
 include(${CMAKE_SOURCE_DIR}/cmake/compilers.cmake)
 
 message(STATUS "${Blue}${PROJECT_NAME}-2. Setting up project parameters ...${ColorReset}")
+include(${CMAKE_SOURCE_DIR}/cmake/parameters.cmake)
 
 message(STATUS "${Blue}${PROJECT_NAME}-3. Setting up system libraries ...${ColorReset}")
+find_package(Torch REQUIRED)
+if (CUDA)
+  find_package(CUDAToolkit REQUIRED)
+else()
+  set(CUDAToolkit_FOUND OFF)
+endif()
 
 if (CUDAToolkit_FOUND)
   set(CMAKE_CUDA_ARCHITECTURES 61 86 89)
@@ -94,6 +101,7 @@ file(READ "${CMAKE_CURRENT_SOURCE_DIR}/python/VERSION" PROJECT_VERSION)
 string(STRIP "${PROJECT_VERSION}" PROJECT_VERSION)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/version.h.in
                ${CMAKE_CURRENT_SOURCE_DIR}/src/version.h @ONLY)
+configure_file(${CMAKE_SOURCE_DIR}/configure.h.in configure.h @ONLY)
 add_subdirectory(src)
 
 if (BUILD_TESTS)

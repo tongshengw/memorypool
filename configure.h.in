@@ -10,19 +10,11 @@
   #define DISPATCH_MACRO
 #endif
 
-#ifdef USE_MEMORY_POOL
-  // cpu static variables
-  //#define MEM_POOL_SIZE 64000 (CPU)
-  //#define MEM_POOL_SIZE 4000 (GPU)
-  #define MEM_POOL_SIZE @CPU_MEM_POOL_SIZE@
+// cpu static variables
+#define MEM_POOL_SIZE @MEM_POOL_SIZE@
 
-  // NOTE: MAX_BLOCKS is for printlayout function, as a buffer is created
-  // statically, could change to dynamic
-  //#define MAX_BLOCKS 100
-  #define MAX_BLOCKS @CPU_MAX_BLOCKS@
+// NOTE: MAX_BLOCKS is for printlayout function, as a buffer is created
+// statically, could change to dynamic
+#define MEM_MAX_BLOCKS @MEM_MAX_BLOCKS@
 
-  //#define MAX_THREADS 1024
-  #define MAX_THREADS @MAX_THREADS@
-#else
-  #include <stdlib.h>
-#endif
+#define MEM_MAX_THREADS @MEM_MAX_THREADS@

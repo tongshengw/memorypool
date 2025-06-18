@@ -2,8 +2,7 @@
 
 #include <math.h>
 #include <stdio.h>
-
-#include <configure.h>
+#include <stdlib.h>
 
 #define A(i,j) a[(i)*n+(j)]
 

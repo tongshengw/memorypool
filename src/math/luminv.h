@@ -1,6 +1,6 @@
 #pragma once
 
-#include <configure.h>
+#include <stdlib.h>
 
 /*!
  * \brief invert a matrix, Y = A^{-1}

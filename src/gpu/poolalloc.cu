@@ -23,7 +23,7 @@
 // static BlockHeader memPool[(MEM_POOL_SIZE/sizeof(BlockHeader))+1];
 
 // TODO: placeholder for now, might be able to reduce memory overhead
-__device__ MemoryPool g_memoryPools[MAX_THREADS];
+__device__ MemoryPool g_memoryPools[MEM_MAX_THREADS];
 
 __device__ static BlockFooter *getBlockFooter(BlockHeader *header) {
     return (BlockFooter *)((char *)header + sizeof(BlockHeader) + header->size);
@@ -418,8 +418,8 @@ __device__ void printlayout() {
     BlockHeader *&freeList = g_memoryPools[threadInd].freeList;
     BlockHeader *&usedList = g_memoryPools[threadInd].usedList;
 
-    BlockHeader const *headers[MAX_BLOCKS];
-    for (int i = 0; i < MAX_BLOCKS; i++) {
+    BlockHeader const *headers[MEM_MAX_BLOCKS];
+    for (int i = 0; i < MEM_MAX_BLOCKS; i++) {
         headers[i] = NULL;
     }
 

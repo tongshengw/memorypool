@@ -6,16 +6,14 @@ enable_testing()
 
 # C++ tests
 setup_test(demo)
+#setup_test(fuzzy-test)
+setup_test(linalg-test)
+setup_test(volume-test)
 
-# Python tests
-
-file(GLOB pyfiles *.py)
-
-foreach(pyfile ${pyfiles})
-  get_filename_component(name ${pyfile} NAME)
-  message(STATUS "Copying ${pyfile} to ${name}")
-  configure_file(${pyfile} ${CMAKE_CURRENT_BINARY_DIR}/${name} @ONLY)
-  add_test(NAME ${name} COMMAND python3 ${name})
+# copy data file
+file(GLOB txtfiles *.txt)
+foreach(txtfile ${txtfiles})
+  get_filename_component(name ${txtfile} NAME)
+  message(STATUS "Copying ${txtfile} to ${name}")
+  configure_file(${txtfile} ${CMAKE_CURRENT_BINARY_DIR}/${name} @ONLY)
 endforeach()
-
-add_subdirectory(cdisort213)

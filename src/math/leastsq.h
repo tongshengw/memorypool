@@ -1,8 +1,7 @@
 #pragma once
 
 #include <string.h>
-
-#include <configure.h>
+#include <stdlib.h>
 
 /*!
  * \brief solve least square problem min ||A.x - b||

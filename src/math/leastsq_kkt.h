@@ -1,8 +1,7 @@
 #pragma once
 
 #include <stdio.h>
-
-#include <configure.h>
+#include <stdlib.h>
 
 #define A(i, j) a[(i) * n2 + (j)]
 #define ATA(i, j) ata[(i) * n2 + (j)]

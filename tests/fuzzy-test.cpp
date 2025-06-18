@@ -3,11 +3,11 @@
 #include <stdlib.h>
 #include <getopt.h>
 
-#include <poolalloc.h>
+#include <memorypool/cpu/poolalloc.h>  
 
-// #define MAX_TEST_SIZE 20
-// #define MAX_BYTES_PER_ALLOC 16
-// #define NUM_TESTS 1
+//#define MAX_TEST_SIZE 20
+//#define MAX_BYTES_PER_ALLOC 16
+//#define NUM_TESTS 1
 
 int MAX_TEST_SIZE = -1;
 int MAX_BYTES_PER_ALLOC = -1;
@@ -100,7 +100,7 @@ void executeTestOperationArr(TestOperation *ops, int N) {
     for (int i = 0; i < N; i++) {
         printf("Operation %d: ", i);
         if (ops[i].isAlloc) {
-            allocatedAddrs[i] = poolmalloc(ops[i].numBytes);
+            allocatedAddrs[i] = malloc(ops[i].numBytes);
             bytesAllocated[i] = ops[i].numBytes;
             assert(allocatedAddrs[i] != NULL);
 
