@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <cuda_runtime.h>
-#include "poolalloc.cuh"
+
+#include <memorypool/gpu/poolalloc.cuh>
 
 __global__ void allocate_and_write(int **ptrs, int n, void *poolMemoryBlock) {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;

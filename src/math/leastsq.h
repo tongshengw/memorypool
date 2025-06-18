@@ -3,6 +3,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <configure.h>
+
 /*!
  * \brief solve least square problem min ||A.x - b||
  *

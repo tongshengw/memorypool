@@ -2,6 +2,8 @@
 
 #include <assert.h>
 
+#include <configure.h>
+
 /*!
  * \brief matrix-vector dot product: m.v
  * \param[out] r[0..n1-1] output vector

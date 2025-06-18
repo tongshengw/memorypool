@@ -4,12 +4,13 @@
 #include <cuda_runtime.h>
 #include <assert.h>
 
-#include <linalg.h>
+#include <memorypool/alloc.h>
+#include <memorypool/math/linalg.h>
 
 // test vvdot
 // TODO: could change errors to exit(1) for better ctest
 // test ludcmp
-__host__ __device__ void test_ludcmp()
+__device__ void test_ludcmp()
 {
   // printf("Testing ludcmp...\n");
   double a[4] = {1.0, 2.0, 3.0, 4.0};
@@ -36,7 +37,7 @@ __host__ __device__ void test_ludcmp()
 }
 
 // test lubksb
-__host__ __device__ void test_lubksb()
+__device__ void test_lubksb()
 {
   // printf("Testing lubksb...\n");
   double b[2] = {5.0, 11.0};
@@ -70,7 +71,7 @@ __host__ __device__ void test_lubksb()
 }
 
 // test luminv
-__host__ __device__ void test_luminv()
+__device__ void test_luminv()
 {
   // printf("Testing luminv...\n");
   double a[4] = {1.0, 2.0, 3.0, 4.0};
@@ -104,7 +105,7 @@ __host__ __device__ void test_luminv()
 }
 
 // test leastsq
-__host__ __device__ void test_leastsq()
+__device__ void test_leastsq()
 {
   // printf("Testing leastsq...\n");
   double a[6] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0};
@@ -140,7 +141,7 @@ __host__ __device__ void test_leastsq()
 }
 
 // test leastsq_kkt
-__host__ __device__ void test_leastsq_kkt()
+__device__ void test_leastsq_kkt()
 {
   // printf("Testing leastsq_kkt...\n");
   double a[6] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0};

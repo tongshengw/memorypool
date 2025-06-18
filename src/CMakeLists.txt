@@ -85,6 +85,6 @@ if (CUDAToolkit_FOUND)
   add_library(${namel}::${namel}_cu ALIAS ${namel}_cuda_${buildl})
 endif()
 
-set(MEMORYPOOL_INCLUDE_DIR
+set(${nameu}_INCLUDE_DIR
   "${CMAKE_CURRENT_SOURCE_DIR}/.."
   CACHE INTERNAL "${namel} include directory")

@@ -2,6 +2,8 @@
 
 #include <stdlib.h>
 
+#include <configure.h>
+
 /*!
  * \brief invert a matrix, Y = A^{-1}
  *

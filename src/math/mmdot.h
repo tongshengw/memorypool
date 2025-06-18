@@ -2,6 +2,8 @@
 
 #include <stdio.h>
 
+#include <configure.h>
+
 /*!
  * \brief matrix-matrix dot product: a.b
  * \param[out] r[0..n1*n3-1] output matrix in row-major sequential storage

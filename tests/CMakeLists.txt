@@ -10,6 +10,11 @@ setup_test(demo)
 setup_test(linalg-test)
 setup_test(volume-test)
 
+# cuda tests
+setup_cuda_test(test-cuda)
+setup_cuda_test(linalg-gpu)
+setup_cuda_test(fuzzy-test-gpu)
+
 # copy data file
 file(GLOB txtfiles *.txt)
 foreach(txtfile ${txtfiles})

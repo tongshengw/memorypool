@@ -1,5 +1,4 @@
-#ifndef GPU_POOL_ALLOC_H
-#define GPU_POOL_ALLOC_H
+#pragma once
 
 #include <stdbool.h>
 
@@ -37,5 +36,3 @@ __device__ void printbytes();
 __device__ int dataBytes(BlockHeader *head);
 
 __device__ int headerBytes(BlockHeader *head);
-
-#endif  // GPU_POOL_ALLOC_H

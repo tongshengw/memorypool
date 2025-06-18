@@ -1,5 +1,7 @@
 #pragma once 
 
+#include <configure.h>
+
 /*!
  * \brief Solves the set of n linear equations A.X = B.
  *

@@ -4,7 +4,7 @@
 #include <getopt.h>
 #include <assert.h>
 
-#include "poolalloc.cuh"
+#include <memorypool/gpu/poolalloc.cuh>
 
 #define NUM_THREADS 128
 #define OPS_PER_THREAD 30

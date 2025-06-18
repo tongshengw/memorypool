@@ -8,20 +8,16 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
-option(CUDA "Enable CUDA support" OFF)
 option(BUILD_EXAMPLES "Build examples" OFF)
 option(BUILD_TESTS "Build tests" ON)
 
-if (CUDA)
-  project(memorypool 
-    LANGUAGES C CXX CUDA 
-    DESCRIPTION "Memory Pool Allocator for C/C++ and CUDA")
-else()
-  project(
-    memorypool
-    LANGUAGES CXX C
-    DESCRIPTION "Memory Pool Allocator for C/C++")
-endif()
+project(
+  memorypool
+  LANGUAGES CXX C
+  DESCRIPTION "Memory Pool Allocator for C/C++ and CUDA")
+
+# Try to enable CUDA
+enable_language(CUDA OPTIONAL)
 
 # search for <Package>_ROOT
 cmake_policy(SET CMP0074 NEW)
@@ -85,7 +81,7 @@ include(${CMAKE_SOURCE_DIR}/cmake/parameters.cmake)
 
 message(STATUS "${Blue}${PROJECT_NAME}-3. Setting up system libraries ...${ColorReset}")
 find_package(Torch REQUIRED)
-if (CUDA)
+if (CMAKE_CUDA_COMPILER)
   find_package(CUDAToolkit REQUIRED)
 else()
   set(CUDAToolkit_FOUND OFF)

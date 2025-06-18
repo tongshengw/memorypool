@@ -5,7 +5,7 @@
 #define @MEMORY_POOL_OPTION@ 
 
 #ifdef __CUDACC__
-  #define DISPATCH_MACRO __host__ __device__
+  #define DISPATCH_MACRO __device__
 #else
   #define DISPATCH_MACRO
 #endif
