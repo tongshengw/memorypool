@@ -8,7 +8,8 @@
 #define AUG(i, j) aug[(i) * (n2 + nact) + (j)]
 #define C(i, j) c[(i) * n2 + (j)]
 
-void populate_aug(double *aug, double const* ata, double const* c,
+template<typename T>
+DISPATCH_MACRO void populate_aug(T *aug, T const* ata, T const* c,
                   int n2, int nact, int const *ct_indx) {
   // populate A^T.A (upper left block)
   for (int i = 0; i < n2; ++i) {
@@ -39,7 +40,8 @@ void populate_aug(double *aug, double const* ata, double const* c,
   }
 }
 
-void populate_rhs(double *rhs, double const *atb, double const *d,
+template<typename T>
+DISPATCH_MACRO void populate_rhs(T *rhs, T const *atb, T const *d,
                   int n2, int nact, int const *ct_indx) {
   // populate A^T.b (upper part)
   for (int i = 0; i < n2; ++i) {
@@ -52,7 +54,30 @@ void populate_rhs(double *rhs, double const *atb, double const *d,
   }
 }
 
-int leastsq_kkt(double *b, double const *a, double const* c, double const* d,
+/*!
+ * \brief solve constrained least square problem: min ||A.x - b||, s.t. C.x <= d
+ *
+ * This subroutine solves the constrained least square problem using the active
+ * set method based on the KKT conditions. The first `neq` rows of the
+ * constraint matrix `C` are treated as equality constraints, while the
+ * remaining rows are treated as inequality constraints.
+ *
+ * \param[in,out] b[0..n1-1] right-hand-side vector and output. Input dimension
+ * is n1, output dimension is n2, requiring n1 >= n2
+ * \param[in] a[0..n1*n2-1] row-major input matrix, A
+ * \param[in] c[0..n3*n2-1] row-major constraint matrix, C
+ * \param[in] d[0..n3-1] right-hand-side constraint vector, d
+ * \param[in] n1 number of rows in matrix A
+ * \param[in] n2 number of columns in matrix A
+ * \param[in] n3 number of rows in matrix C
+ * \param[in] neq number of equality constraints, 0 <= neq <= n3
+ * \param[in,out] max_iter in: maximum number of iterations to perform, out:
+ * number of iterations actually performed
+ * \return 0 on success, 1 on invalid input (e.g., neq < 0 or neq > n3),
+ *         2 on failure (max_iter reached without convergence).
+ */
+template<typename T>
+DISPATCH_MACRO int leastsq_kkt(T *b, T const *a, T const* c, T const* d,
                 int n1, int n2, int n3, int neq, int *max_iter) {
   // check if n1 > 0, n2 > 0, n3 >= 0
   if (n1 <= 0 || n2 <= 0 || n3 < 0 || n1 < n2) {
@@ -68,13 +93,13 @@ int leastsq_kkt(double *b, double const *a, double const* c, double const* d,
 
   // Allocate memory for the augmented matrix and right-hand side vector
   int size = n2 + n3;
-  double *aug = (double *)malloc(size * size * sizeof(double));
-  double *ata = (double *)malloc(n2 * n2 * sizeof(double));
-  double *atb = (double *)malloc(size * sizeof(double));
-  double *rhs = (double *)malloc(size * sizeof(double));
+  T *aug = (T *)malloc(size * size * sizeof(T));
+  T *ata = (T *)malloc(n2 * n2 * sizeof(T));
+  T *atb = (T *)malloc(size * sizeof(T));
+  T *rhs = (T *)malloc(size * sizeof(T));
 
   // evaluation of constraints
-  double *eval = (double *)malloc(n3 * sizeof(double));
+  T *eval = (T *)malloc(n3 * sizeof(T));
 
   // index for the active set
   int *ct_indx = (int *)malloc(n3 * sizeof(int));

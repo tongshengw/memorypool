@@ -3,12 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <configure.h>
 #include "poolalloc.h"
-
-#define MEM_POOL_SIZE 64000
-// NOTE: MAX_BLOCKS is for printlayout function, as a buffer is created
-// statically, could change to dynamic
-#define MAX_BLOCKS 100
 
 // Alignment
 // For now, headers are 16 aligned

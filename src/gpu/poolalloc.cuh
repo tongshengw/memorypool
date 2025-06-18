@@ -1,5 +1,5 @@
-#ifndef POOL_ALLOC
-#define POOL_ALLOC
+#ifndef GPU_POOL_ALLOC_H
+#define GPU_POOL_ALLOC_H
 
 #include <stdbool.h>
 
@@ -38,4 +38,4 @@ __device__ int dataBytes(BlockHeader *head);
 
 __device__ int headerBytes(BlockHeader *head);
 
-#endif
+#endif  // GPU_POOL_ALLOC_H

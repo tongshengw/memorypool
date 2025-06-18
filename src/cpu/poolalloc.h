@@ -1,5 +1,5 @@
-#ifndef POOL_ALLOC
-#define POOL_ALLOC
+#ifndef CPU_POOLALLOC_H
+#define CPU_POOLALLOC_H
 
 #include <stdbool.h>
 
@@ -28,4 +28,4 @@ int dataBytes(BlockHeader *head);
 
 int headerBytes(BlockHeader *head);
 
-#endif
+#endif  // CPU_POOLALLOC_H
