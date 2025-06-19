@@ -200,7 +200,12 @@ __device__ void test_leastsq_kkt()
   assert(max_iter == 1);
 }
 
-__global__ void test_linalg_kernel() {
+__global__ void test_linalg_kernel(void *ptr) {
+    #ifdef USE_MEMORY_POOL
+    unsigned int threadInd = threadIdx.x + blockIdx.x * blockDim.x;
+    poolinit(ptr, threadInd);
+    #endif
+    
     test_ludcmp();
     test_lubksb();
     test_luminv();
@@ -209,7 +214,13 @@ __global__ void test_linalg_kernel() {
 }
 
 void run_linalg_tests() {
-    test_linalg_kernel<<<1, 256>>>();
+    #ifdef USE_MEMORY_POOL
+    void *ptr = allocatePools(256);
+    test_linalg_kernel<<<1, 256>>>(ptr);
+    #else
+    test_linalg_kernel<<<1, 256>>>(NULL);
+    #endif
+
     
     cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess) {
@@ -226,5 +237,7 @@ void run_linalg_tests() {
 
 int main() {
     run_linalg_tests();
+    cudaDeviceSynchronize();
+    printf("Done!\n");
 }
 
