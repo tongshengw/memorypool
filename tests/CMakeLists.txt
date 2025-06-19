@@ -14,6 +14,7 @@ setup_test(volume-test)
 setup_cuda_test(test-cuda)
 setup_cuda_test(linalg-gpu)
 setup_cuda_test(fuzzy-test-gpu)
+setup_cuda_test(performance-test-gpu)
 
 # copy data file
 file(GLOB txtfiles *.txt)
