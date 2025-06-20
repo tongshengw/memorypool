@@ -24,7 +24,7 @@ void cpu_generate_matrices(double *output, int number, int size) {
 __global__ void test_ludcmp_kernel(double *matrices, int *results, int number, int size) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
     if(index < number) {
-        ludcmp(matrices + (index * size * size), results + (index * size * size), size);
+        ludcmp(matrices + (index * size * size), results + (index * size), size);
     }
 }
 
@@ -34,7 +34,7 @@ void test_ludcmp(double *h_input, int number, int size) {
     cudaMemcpy(d_input, h_input, number * size * size * sizeof(double), cudaMemcpyHostToDevice);
 
     int *d_idx;
-    cudaMalloc(&d_idx, number * (size/2) * (size/2) * sizeof(int));
+    cudaMalloc(&d_idx, number * size * sizeof(int));
 
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
@@ -52,22 +52,22 @@ void test_ludcmp(double *h_input, int number, int size) {
     double *gpu_input_modified = (double *)malloc(number * size * size * sizeof(double));
     cudaMemcpy(gpu_input_modified, d_input, number * size * size * sizeof(double), cudaMemcpyDeviceToHost);
 
-    int *h_idx = (int *)malloc(number * (size/2) * (size/2) * sizeof(int));
-    cudaMemcpy(h_idx, d_idx, number * (size/2) * (size/2) * sizeof(int), cudaMemcpyDeviceToHost);
+    int *gpu_idx_modified = (int *)malloc(number * size * sizeof(int));
+    cudaMemcpy(gpu_idx_modified, d_idx, number * size * sizeof(int), cudaMemcpyDeviceToHost);
 
-    int *ref_idx = (int *)malloc(number * (size/2) * (size/2) * sizeof(int));
+    int *ref_idx = (int *)malloc(number * size * sizeof(int));
 
     printf("Calculating CPU reference...\n");
     for (int i = 0; i < number; i++) {
-        ludcmp(h_input + (i * size * size), ref_idx + (i * size * size), size);
+        ludcmp(h_input + (i * size * size), ref_idx + (i * size), size);
     }
 
     // checking idx array
     printf("Checking idx array correctness...\n");
     for (int i = 0; i < number; i++) {
-        for (int j = 0; j < (size/2) * (size/2); j++) {
-            if(h_idx[i] != ref_idx[i]) {
-                printf("Error at idx index %d: %d != %d\n", i, h_idx[i], ref_idx[i]);
+        for (int j = 0; j < size; j++) {
+            if(gpu_idx_modified[i] != ref_idx[i]) {
+                printf("Error at idx index %d: %d != %d\n", i, gpu_idx_modified[i], ref_idx[i]);
                 exit(1);
             }
         }
@@ -88,7 +88,7 @@ void test_ludcmp(double *h_input, int number, int size) {
 
     cudaFree(d_input);
     cudaFree(d_idx);
-    free(h_idx);
+    free(gpu_idx_modified);
     free(ref_idx);
 }
 
