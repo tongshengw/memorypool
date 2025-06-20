@@ -41,7 +41,10 @@ void test_ludcmp(double *h_input, int number, int size) {
     cudaEventCreate(&stop);
     cudaEventRecord(start);
 
-    test_ludcmp_kernel<<<1, 10>>>(d_input, d_idx, number, size);
+    // Calculate grid size to handle all matrices
+    int blockSize = 256;
+    int gridSize = (number + blockSize - 1) / blockSize;
+    test_ludcmp_kernel<<<gridSize, blockSize>>>(d_input, d_idx, number, size);
 
     cudaDeviceSynchronize();
     cudaEventRecord(stop);
@@ -66,8 +69,9 @@ void test_ludcmp(double *h_input, int number, int size) {
     printf("Checking idx array correctness...\n");
     for (int i = 0; i < number; i++) {
         for (int j = 0; j < size; j++) {
-            if(gpu_idx_modified[i] != ref_idx[i]) {
-                printf("Error at idx index %d: %d != %d\n", i, gpu_idx_modified[i], ref_idx[i]);
+            int idx_pos = i * size + j;
+            if(gpu_idx_modified[idx_pos] != ref_idx[idx_pos]) {
+                printf("Error at idx index %d (matrix %d, element %d): %d != %d\n", idx_pos, i, j, gpu_idx_modified[idx_pos], ref_idx[idx_pos]);
                 exit(1);
             }
         }
@@ -88,6 +92,7 @@ void test_ludcmp(double *h_input, int number, int size) {
 
     cudaFree(d_input);
     cudaFree(d_idx);
+    free(gpu_input_modified);
     free(gpu_idx_modified);
     free(ref_idx);
 }
@@ -124,6 +129,10 @@ int main(int argc, char **argv) {
             break;
         default:
             printf("Invalid function number\n");
+            free(h_input);
             return 1;
     }
+
+    free(h_input);
+    return 0;
 }
