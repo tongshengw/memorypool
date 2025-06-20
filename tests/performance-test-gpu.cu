@@ -4,7 +4,12 @@
 #include<cuda_runtime.h>
 #include<memorypool/math/linalg.h>
 
-#define SEED 0
+#define SEED 2
+#define APPROX_EQUAL_DIFF 1e-6
+
+bool approx_equal(double a, double b) {
+    return fabs(a - b) < APPROX_EQUAL_DIFF;
+}
 
 void cpu_generate_matrices(double *output, int number, int size) {
     std::mt19937 gen(SEED);
@@ -19,7 +24,6 @@ void cpu_generate_matrices(double *output, int number, int size) {
 __global__ void test_ludcmp_kernel(double *matrices, int *results, int number, int size) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
     if(index < number) {
-        printf("HERE: %f", matrices[index]);
         ludcmp(matrices + (index * size * size), results + (index * size * size), size);
     }
 }
@@ -29,47 +33,63 @@ void test_ludcmp(double *h_input, int number, int size) {
     cudaMalloc(&d_input, number * size * size * sizeof(double));
     cudaMemcpy(d_input, h_input, number * size * size * sizeof(double), cudaMemcpyHostToDevice);
 
-    int *d_results;
-    cudaMalloc(&d_results, number * (size/2) * (size/2) * sizeof(int));
+    int *d_idx;
+    cudaMalloc(&d_idx, number * (size/2) * (size/2) * sizeof(int));
 
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
     cudaEventRecord(start);
 
-    test_ludcmp_kernel<<<1, 10>>>(d_input, d_results, number, size);
+    test_ludcmp_kernel<<<1, 10>>>(d_input, d_idx, number, size);
 
     cudaDeviceSynchronize();
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
     float milliseconds = 0;
     cudaEventElapsedTime(&milliseconds, start, stop);
+    
+    double *gpu_input_modified = (double *)malloc(number * size * size * sizeof(double));
+    cudaMemcpy(gpu_input_modified, d_input, number * size * size * sizeof(double), cudaMemcpyDeviceToHost);
 
-    int *h_results = (int *)malloc(number * (size/2) * (size/2) * sizeof(int));
-    cudaMemcpy(h_results, d_results, number * (size/2) * (size/2) * sizeof(int), cudaMemcpyDeviceToHost);
+    int *h_idx = (int *)malloc(number * (size/2) * (size/2) * sizeof(int));
+    cudaMemcpy(h_idx, d_idx, number * (size/2) * (size/2) * sizeof(int), cudaMemcpyDeviceToHost);
 
-    int *ref_results = (int *)malloc(number * (size/2) * (size/2) * sizeof(int));
+    int *ref_idx = (int *)malloc(number * (size/2) * (size/2) * sizeof(int));
 
+    printf("Calculating CPU reference...\n");
     for (int i = 0; i < number; i++) {
-        ref_results[i] = ludcmp(h_input + (i * size), ref_results + (i * size), size);
+        ludcmp(h_input + (i * size * size), ref_idx + (i * size * size), size);
     }
 
+    // checking idx array
+    printf("Checking idx array correctness...\n");
     for (int i = 0; i < number; i++) {
         for (int j = 0; j < (size/2) * (size/2); j++) {
-            // if(h_results[i] != ref_results[i]) {
-            //     printf("Error at index %d: %d != %d\n", i, h_results[i], ref_results[i]);
-            //     exit(1);
-            // }
-            std::cout << "(" << h_results[i] << ", " << ref_results[i] << ")\n";
+            if(h_idx[i] != ref_idx[i]) {
+                printf("Error at idx index %d: %d != %d\n", i, h_idx[i], ref_idx[i]);
+                exit(1);
+            }
+        }
+    }
+    
+    // checking input array
+    printf("Checking input array correctness...\n");
+    for (int i = 0; i < number; i++) {
+        for (int j = 0; j < size * size; j++) {
+            if(!approx_equal(h_input[i * size * size + j], gpu_input_modified[i * size * size + j])) {
+                printf("Error at input index %d: %f != %f\n", i * size * size + j, gpu_input_modified[i * size * size + j], h_input[i * size * size + j]);
+                exit(1);
+            }
         }
     }
 
     printf("Time taken: %f milliseconds\n", milliseconds);
 
     cudaFree(d_input);
-    cudaFree(d_results);
-    free(h_results);
-    free(ref_results);
+    cudaFree(d_idx);
+    free(h_idx);
+    free(ref_idx);
 }
 
 int main(int argc, char **argv) {
