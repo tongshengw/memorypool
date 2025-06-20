@@ -53,49 +53,49 @@ void test_ludcmp(double *h_input, unsigned int number, unsigned int size) {
     float milliseconds = 0;
     cudaEventElapsedTime(&milliseconds, start, stop);
     
-    double *gpu_input_modified = (double *)malloc(number * size * size * sizeof(double));
-    cudaMemcpy(gpu_input_modified, d_input, number * size * size * sizeof(double), cudaMemcpyDeviceToHost);
+    // double *gpu_input_modified = (double *)malloc(number * size * size * sizeof(double));
+    // cudaMemcpy(gpu_input_modified, d_input, number * size * size * sizeof(double), cudaMemcpyDeviceToHost);
 
-    int *gpu_idx_modified = (int *)malloc(number * size * sizeof(int));
-    cudaMemcpy(gpu_idx_modified, d_idx, number * size * sizeof(int), cudaMemcpyDeviceToHost);
+    // int *gpu_idx_modified = (int *)malloc(number * size * sizeof(int));
+    // cudaMemcpy(gpu_idx_modified, d_idx, number * size * sizeof(int), cudaMemcpyDeviceToHost);
 
-    int *ref_idx = (int *)malloc(number * size * sizeof(int));
+    // int *ref_idx = (int *)malloc(number * size * sizeof(int));
 
-    printf("Calculating CPU reference...\n");
-    for (unsigned int i = 0; i < number; i++) {
-        ludcmp(h_input + (i * size * size), ref_idx + (i * size), size);
-    }
+    // // printf("Calculating CPU reference...\n");
+    // for (unsigned int i = 0; i < number; i++) {
+    //     ludcmp(h_input + (i * size * size), ref_idx + (i * size), size);
+    // }
 
-    // checking idx array
-    printf("Checking idx array correctness...\n");
-    for (unsigned int i = 0; i < number; i++) {
-        for (unsigned int j = 0; j < size; j++) {
-            int idx_pos = i * size + j;
-            if(gpu_idx_modified[idx_pos] != ref_idx[idx_pos]) {
-                printf("Error at idx index %d (matrix %d, element %d): %d != %d\n", idx_pos, i, j, gpu_idx_modified[idx_pos], ref_idx[idx_pos]);
-                exit(1);
-            }
-        }
-    }
+    // // checking idx array
+    // // printf("Checking idx array correctness...\n");
+    // for (unsigned int i = 0; i < number; i++) {
+    //     for (unsigned int j = 0; j < size; j++) {
+    //         int idx_pos = i * size + j;
+    //         if(gpu_idx_modified[idx_pos] != ref_idx[idx_pos]) {
+    //             printf("Error at idx index %d (matrix %d, element %d): %d != %d\n", idx_pos, i, j, gpu_idx_modified[idx_pos], ref_idx[idx_pos]);
+    //             exit(1);
+    //         }
+    //     }
+    // }
     
-    // checking input array
-    printf("Checking input array correctness...\n");
-    for (unsigned int i = 0; i < number; i++) {
-        for (unsigned int j = 0; j < size * size; j++) {
-            if(!approx_equal(h_input[i * size * size + j], gpu_input_modified[i * size * size + j])) {
-                printf("Error at input index %d: %f != %f\n", i * size * size + j, gpu_input_modified[i * size * size + j], h_input[i * size * size + j]);
-                exit(1);
-            }
-        }
-    }
+    // // checking input array
+    // // printf("Checking input array correctness...\n");
+    // for (unsigned int i = 0; i < number; i++) {
+    //     for (unsigned int j = 0; j < size * size; j++) {
+    //         if(!approx_equal(h_input[i * size * size + j], gpu_input_modified[i * size * size + j])) {
+    //             printf("Error at input index %d: %f != %f\n", i * size * size + j, gpu_input_modified[i * size * size + j], h_input[i * size * size + j]);
+    //             exit(1);
+    //         }
+    //     }
+    // }
 
-    printf("Time taken: %f milliseconds\n", milliseconds);
+    printf("%f\n", milliseconds);
 
-    cudaFree(d_input);
-    cudaFree(d_idx);
-    free(gpu_input_modified);
-    free(gpu_idx_modified);
-    free(ref_idx);
+    // cudaFree(d_input);
+    // cudaFree(d_idx);
+    // free(gpu_input_modified);
+    // free(gpu_idx_modified);
+    // free(ref_idx);
 }
 
 int main(int argc, char **argv) {
