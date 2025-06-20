@@ -4,31 +4,32 @@
 #include<cuda_runtime.h>
 #include<memorypool/math/linalg.h>
 
-#define SEED 2
+// #define SEED 1235
 #define APPROX_EQUAL_DIFF 1e-6
 
 bool approx_equal(double a, double b) {
     return fabs(a - b) < APPROX_EQUAL_DIFF;
 }
 
-void cpu_generate_matrices(double *output, int number, int size) {
-    std::mt19937 gen(SEED);
+void cpu_generate_matrices(double *output, unsigned int number, unsigned int size) {
+    std::random_device rd;
+    std::mt19937 gen(rd());
     std::uniform_real_distribution<double> dis(0, 100);
-    for(int i = 0; i < number; i++) {
-        for(int j = 0; j < size * size; j++) {
+    for(unsigned int i = 0; i < number; i++) {
+        for(unsigned int j = 0; j < size * size; j++) {
             output[i * size * size + j] = dis(gen);
         }
     }
 }
 
-__global__ void test_ludcmp_kernel(double *matrices, int *results, int number, int size) {
-    int index = blockIdx.x * blockDim.x + threadIdx.x;
+__global__ void test_ludcmp_kernel(double *matrices, int *results, unsigned int number, unsigned int size) {
+    unsigned int index = blockIdx.x * blockDim.x + threadIdx.x;
     if(index < number) {
         ludcmp(matrices + (index * size * size), results + (index * size), size);
     }
 }
 
-void test_ludcmp(double *h_input, int number, int size) {
+void test_ludcmp(double *h_input, unsigned int number, unsigned int size) {
     double *d_input;
     cudaMalloc(&d_input, number * size * size * sizeof(double));
     cudaMemcpy(d_input, h_input, number * size * size * sizeof(double), cudaMemcpyHostToDevice);
@@ -61,14 +62,14 @@ void test_ludcmp(double *h_input, int number, int size) {
     int *ref_idx = (int *)malloc(number * size * sizeof(int));
 
     printf("Calculating CPU reference...\n");
-    for (int i = 0; i < number; i++) {
+    for (unsigned int i = 0; i < number; i++) {
         ludcmp(h_input + (i * size * size), ref_idx + (i * size), size);
     }
 
     // checking idx array
     printf("Checking idx array correctness...\n");
-    for (int i = 0; i < number; i++) {
-        for (int j = 0; j < size; j++) {
+    for (unsigned int i = 0; i < number; i++) {
+        for (unsigned int j = 0; j < size; j++) {
             int idx_pos = i * size + j;
             if(gpu_idx_modified[idx_pos] != ref_idx[idx_pos]) {
                 printf("Error at idx index %d (matrix %d, element %d): %d != %d\n", idx_pos, i, j, gpu_idx_modified[idx_pos], ref_idx[idx_pos]);
@@ -79,8 +80,8 @@ void test_ludcmp(double *h_input, int number, int size) {
     
     // checking input array
     printf("Checking input array correctness...\n");
-    for (int i = 0; i < number; i++) {
-        for (int j = 0; j < size * size; j++) {
+    for (unsigned int i = 0; i < number; i++) {
+        for (unsigned int j = 0; j < size * size; j++) {
             if(!approx_equal(h_input[i * size * size + j], gpu_input_modified[i * size * size + j])) {
                 printf("Error at input index %d: %f != %f\n", i * size * size + j, gpu_input_modified[i * size * size + j], h_input[i * size * size + j]);
                 exit(1);
@@ -106,8 +107,8 @@ int main(int argc, char **argv) {
     }
 
     int function_number = atoi(argv[1]);
-    int number_of_matrices = atoi(argv[2]);
-    int size_of_matrices = atoi(argv[3]);
+    unsigned int number_of_matrices = atoi(argv[2]);
+    unsigned int size_of_matrices = atoi(argv[3]);
 
     double *h_input = (double *)malloc(number_of_matrices * size_of_matrices * size_of_matrices * sizeof(double));
     cpu_generate_matrices(h_input, number_of_matrices, size_of_matrices);
