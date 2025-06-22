@@ -10,7 +10,7 @@ endif()
 if (CUDA)
   set(MEM_POOL_SIZE 4000)
 else()
-  set(MEM_POOL_SIZE 64000)
+  set(MEM_POOL_SIZE 1000)
 endif()
 
 set(MEM_MAX_BLOCKS 100)

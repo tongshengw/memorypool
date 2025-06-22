@@ -3,6 +3,7 @@
 #include<random>
 #include<cuda_runtime.h>
 #include<memorypool/math/linalg.h>
+#include<memorypool/gpu/poolalloc.cuh>
 
 // #define SEED 1235
 #define APPROX_EQUAL_DIFF 1e-6
@@ -22,10 +23,25 @@ void cpu_generate_matrices(double *output, unsigned int number, unsigned int siz
     }
 }
 
-__global__ void test_ludcmp_kernel(double *matrices, int *results, unsigned int number, unsigned int size) {
+__global__ void init_all_pools(void *poolMemoryBlock, unsigned int number) {
+    unsigned int threadInd = threadIdx.x + blockIdx.x * blockDim.x;
+    if(threadInd < number) {
+        poolinit(poolMemoryBlock, threadInd);
+    }
+}
+
+// __global__ void test_ludcmp_kernel(double *matrices, int *results, unsigned int number, unsigned int size, double *buf 
+__global__ void test_ludcmp_kernel(double *matrices, int *results, unsigned int number, unsigned int size
+                                   #ifdef USE_MEMORY_POOL
+                                   , void *ptr
+                                   #endif
+                                   ) {
     unsigned int index = blockIdx.x * blockDim.x + threadIdx.x;
     if(index < number) {
-        ludcmp(matrices + (index * size * size), results + (index * size), size);
+        for (unsigned int i = 0; i < 10000; i++) {
+            ludcmp(matrices + (index * size * size), results + (index * size), size);
+            // ludcmp_buffered(matrices + (index * size * size), results + (index * size), size, buf + (index * size));
+        }
     }
 }
 
@@ -37,17 +53,32 @@ void test_ludcmp(double *h_input, unsigned int number, unsigned int size) {
     int *d_idx;
     cudaMalloc(&d_idx, number * size * sizeof(int));
 
+
+    int blockSize = 1024;
+    int gridSize = (number + blockSize - 1) / blockSize;
+
+    #ifdef USE_MEMORY_POOL
+    void *poolMemoryBlock = allocatePools(number);
+    init_all_pools<<<gridSize, blockSize>>>(poolMemoryBlock, number);
+    cudaDeviceSynchronize();
+    #endif
+    
+    // double *buf;
+    // cudaMalloc(&buf, number * size * sizeof(double));
+
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
     cudaEventRecord(start);
-
-    // Calculate grid size to handle all matrices
-    int blockSize = 256;
-    int gridSize = (number + blockSize - 1) / blockSize;
+    
+    #ifdef USE_MEMORY_POOL
+    test_ludcmp_kernel<<<gridSize, blockSize>>>(d_input, d_idx, number, size, poolMemoryBlock);
+    #else
+    // test_ludcmp_kernel<<<gridSize, blockSize>>>(d_input, d_idx, number, size, buf);
     test_ludcmp_kernel<<<gridSize, blockSize>>>(d_input, d_idx, number, size);
-
+    #endif
     cudaDeviceSynchronize();
+
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
     float milliseconds = 0;
@@ -109,6 +140,10 @@ int main(int argc, char **argv) {
     int function_number = atoi(argv[1]);
     unsigned int number_of_matrices = atoi(argv[2]);
     unsigned int size_of_matrices = atoi(argv[3]);
+    // int function_number = 0;
+    // unsigned int number_of_matrices = 1000;
+    // unsigned int size_of_matrices = 10;
+    
 
     double *h_input = (double *)malloc(number_of_matrices * size_of_matrices * size_of_matrices * sizeof(double));
     cpu_generate_matrices(h_input, number_of_matrices, size_of_matrices);
@@ -123,6 +158,13 @@ int main(int argc, char **argv) {
     //     }
     //     printf("\n");
     // }
+    
+    // FIXME: comment out to use python script
+    // #ifdef USE_MEMORY_POOL
+    // printf("Using memory pool\n");
+    // #else
+    // printf("Not using memory pool\n");
+    // #endif
 
     switch(function_number) {
         case 0:
