@@ -2,10 +2,10 @@
 #include<iostream>
 #include<random>
 #include<cuda_runtime.h>
+#include<memorypool/alloc.h>
 #include<memorypool/math/linalg.h>
 #include<memorypool/gpu/poolalloc.cuh>
 
-// #define SEED 1235
 #define APPROX_EQUAL_DIFF 1e-6
 
 bool approx_equal(double a, double b) {
@@ -83,50 +83,11 @@ void test_ludcmp(double *h_input, unsigned int number, unsigned int size) {
     cudaEventSynchronize(stop);
     float milliseconds = 0;
     cudaEventElapsedTime(&milliseconds, start, stop);
-    
-    // double *gpu_input_modified = (double *)malloc(number * size * size * sizeof(double));
-    // cudaMemcpy(gpu_input_modified, d_input, number * size * size * sizeof(double), cudaMemcpyDeviceToHost);
-
-    // int *gpu_idx_modified = (int *)malloc(number * size * sizeof(int));
-    // cudaMemcpy(gpu_idx_modified, d_idx, number * size * sizeof(int), cudaMemcpyDeviceToHost);
-
-    // int *ref_idx = (int *)malloc(number * size * sizeof(int));
-
-    // // printf("Calculating CPU reference...\n");
-    // for (unsigned int i = 0; i < number; i++) {
-    //     ludcmp(h_input + (i * size * size), ref_idx + (i * size), size);
-    // }
-
-    // // checking idx array
-    // // printf("Checking idx array correctness...\n");
-    // for (unsigned int i = 0; i < number; i++) {
-    //     for (unsigned int j = 0; j < size; j++) {
-    //         int idx_pos = i * size + j;
-    //         if(gpu_idx_modified[idx_pos] != ref_idx[idx_pos]) {
-    //             printf("Error at idx index %d (matrix %d, element %d): %d != %d\n", idx_pos, i, j, gpu_idx_modified[idx_pos], ref_idx[idx_pos]);
-    //             exit(1);
-    //         }
-    //     }
-    // }
-    
-    // // checking input array
-    // // printf("Checking input array correctness...\n");
-    // for (unsigned int i = 0; i < number; i++) {
-    //     for (unsigned int j = 0; j < size * size; j++) {
-    //         if(!approx_equal(h_input[i * size * size + j], gpu_input_modified[i * size * size + j])) {
-    //             printf("Error at input index %d: %f != %f\n", i * size * size + j, gpu_input_modified[i * size * size + j], h_input[i * size * size + j]);
-    //             exit(1);
-    //         }
-    //     }
-    // }
 
     printf("%f\n", milliseconds);
 
-    // cudaFree(d_input);
-    // cudaFree(d_idx);
-    // free(gpu_input_modified);
-    // free(gpu_idx_modified);
-    // free(ref_idx);
+    cudaFree(d_input);
+    cudaFree(d_idx);
 }
 
 int main(int argc, char **argv) {
@@ -140,24 +101,9 @@ int main(int argc, char **argv) {
     int function_number = atoi(argv[1]);
     unsigned int number_of_matrices = atoi(argv[2]);
     unsigned int size_of_matrices = atoi(argv[3]);
-    // int function_number = 0;
-    // unsigned int number_of_matrices = 1000;
-    // unsigned int size_of_matrices = 10;
-    
 
     double *h_input = (double *)malloc(number_of_matrices * size_of_matrices * size_of_matrices * sizeof(double));
     cpu_generate_matrices(h_input, number_of_matrices, size_of_matrices);
-    // printf("h_input values:\n");
-    // for (int i = 0; i < number_of_matrices; i++) {
-    //     printf("Matrix %d:\n", i);
-    //     for (int j = 0; j < size_of_matrices; j++) {
-    //         for (int k = 0; k < size_of_matrices; k++) {
-    //             printf("%f ", h_input[i * size_of_matrices * size_of_matrices + j * size_of_matrices + k]);
-    //         }
-    //         printf("\n");
-    //     }
-    //     printf("\n");
-    // }
     
     // FIXME: comment out to use python script
     // #ifdef USE_MEMORY_POOL
