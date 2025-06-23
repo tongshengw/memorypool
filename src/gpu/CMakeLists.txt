@@ -20,7 +20,7 @@ set_target_properties(gpu-concept PROPERTIES
 
 add_executable(fuzzy-gpu fuzzy-test.cu)
 target_link_libraries(fuzzy-gpu ${CUDA_LIBRARIES} poolalloc-gpu)
-target_include_directories(fuzzy-gpu PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+target_include_directories(fuzzy-gpu PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 set_target_properties(fuzzy-gpu PROPERTIES
     CUDA_SEPARABLE_COMPILATION ON
 )
