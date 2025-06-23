@@ -77,7 +77,7 @@ def plot_performance_results(results: List[Tuple[int, float]]):
     ax1.plot(num_matrices, exec_times, 'b-o', linewidth=2, markersize=6)
     ax1.set_xlabel('Number of Matrices')
     ax1.set_ylabel('Execution Time (ms)')
-    ax1.set_title('GPU Performance: Execution Time')
+    ax1.set_title('GPU Performance: POOL')
     ax1.grid(True, alpha=0.3)
     ax1.set_xscale('linear')
     ax1.set_yscale('linear')
@@ -103,7 +103,7 @@ def main():
     # Define test parameters
     matrix_size = 10
     # test_values = [10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000, 150000, 200000]
-    test_values = range(1000, 100001, 1000)  # Test with matrices from 10 to 1000 in steps of 10
+    test_values = range(1000, 46001, 5000)  # Test with matrices from 10 to 1000 in steps of 10
     
     print(f"Running performance tests with matrix size {matrix_size}x{matrix_size}")
     print("Testing with different numbers of matrices (3 runs each, averaged)...")

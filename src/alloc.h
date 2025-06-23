@@ -8,6 +8,6 @@
   #else
     #include <memorypool/cpu/poolalloc.h>  
   #endif
-  #define malloc(size) poolmalloc(size)
-  #define free(ptr)    poolfree(ptr)
+  #define swappablemalloc(size) poolmalloc(size)
+  #define swappablefree(ptr)    poolfree(ptr)
 #endif

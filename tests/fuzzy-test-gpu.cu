@@ -47,7 +47,9 @@ void generateRandomOperations(TestOperation *ops) {
 __global__ void runTests(TestOperation *ops, void *poolMemoryBlock) {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
+    #ifdef USE_MEMORY_POOL
     poolinit(poolMemoryBlock, idx);
+    #endif
 
     void *allocatedPtrs[OPS_PER_THREAD];
 

@@ -18,7 +18,7 @@
 // blockheader type to ensure first one is aligned
 // TODO: when switching to cuda, remove malloc() in poolinit function
 // using malloc because malloc aligns to 16 on my system
-// static BlockHeader memPool[(MEM_POOL_SIZE/sizeof(BlockHeader))+1];
+// static BlockHeader memPool[(CPU_MEM_POOL_SIZE/sizeof(BlockHeader))+1];
 char *memPool = NULL;
 
 static BlockHeader *freeList;
@@ -37,7 +37,7 @@ static int debugListSize(BlockHeader *head) {
 
 static void assertNoSizeOverflow(BlockHeader *head) {
     while (head) {
-        assert(head->size < MEM_POOL_SIZE);
+        assert(head->size < CPU_MEM_POOL_SIZE);
         head = head->next;
     }
 }
@@ -181,7 +181,7 @@ static int getFooterAlignedSize() {
 static BlockHeader *getNextBlockHeader(BlockHeader *header) {
     int headerOffset = (char *)header - (char *)memPool;
     if (headerOffset + sizeof(BlockHeader) + header->size +
-            getFooterAlignedSize() >= MEM_POOL_SIZE) {
+            getFooterAlignedSize() >= CPU_MEM_POOL_SIZE) {
         return NULL;
     }
 
@@ -202,11 +202,11 @@ static BlockHeader *getPrevBlockHeader(BlockHeader *header) {
 }
 
 void poolinit() {
-    memPool = malloc(MEM_POOL_SIZE);
+    memPool = malloc(CPU_MEM_POOL_SIZE);
     BlockHeader *header = (BlockHeader *)memPool;
     // create a block that fills entire pool
     unsigned long dataSize =
-        MEM_POOL_SIZE - sizeof(BlockHeader) -
+        CPU_MEM_POOL_SIZE - sizeof(BlockHeader) -
         getFooterAlignedSize();
     unsigned long dataSizeAligned = dataSize - dataSize % 16;
     header->size = dataSizeAligned;
@@ -391,7 +391,7 @@ void printlayout() {
     qsort(headers, numHeaders, sizeof(BlockHeader *), BlockHeaderPtrLess);
 
     printf("Memory Layout (total size %d), size not incl headers:\n",
-           MEM_POOL_SIZE);
+           CPU_MEM_POOL_SIZE);
     printf("free: |");
     for (int i = 0; i < numHeaders; i++) {
         if (headers[i]->free) {
@@ -426,9 +426,9 @@ void printlayout() {
 
 void printbytes() {
     printf("\nBytes:\n");
-    for (size_t i = 0; i < MEM_POOL_SIZE; i++) {
+    for (size_t i = 0; i < CPU_MEM_POOL_SIZE; i++) {
         printf("%02X", memPool[i]);
-        if (i < MEM_POOL_SIZE - 1) {
+        if (i < CPU_MEM_POOL_SIZE - 1) {
             printf(" ");
         }
     }

@@ -10,8 +10,7 @@
   #define DISPATCH_MACRO
 #endif
 
-// cpu static variables
-#define MEM_POOL_SIZE @MEM_POOL_SIZE@
+#define GPU_MEM_POOL_SIZE @GPU_MEM_POOL_SIZE@
 
 // NOTE: MAX_BLOCKS is for printlayout function, as a buffer is created
 // statically, could change to dynamic
