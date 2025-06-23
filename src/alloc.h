@@ -10,4 +10,7 @@
   #endif
   #define swappablemalloc(size) poolmalloc(size)
   #define swappablefree(ptr)    poolfree(ptr)
+#else
+  #define swappablemalloc(size) malloc(size)
+  #define swappablefree(ptr)    free(ptr)
 #endif
