@@ -6,12 +6,6 @@
 #include<memorypool/math/linalg.h>
 #include<memorypool/gpu/poolalloc.cuh>
 
-#define APPROX_EQUAL_DIFF 1e-6
-
-bool approx_equal(double a, double b) {
-    return fabs(a - b) < APPROX_EQUAL_DIFF;
-}
-
 void cpu_generate_matrices(double *output, unsigned int number, unsigned int size) {
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -47,11 +41,20 @@ __global__ void test_ludcmp_kernel(double *matrices, int *results, unsigned int 
 
 void test_ludcmp(double *h_input, unsigned int number, unsigned int size) {
     double *d_input;
-    cudaMalloc(&d_input, number * size * size * sizeof(double));
+    cudaError_t err = cudaMalloc(&d_input, number * size * size * sizeof(double));
+    if (err != cudaSuccess) {
+        printf("Error allocating device memory: %s\n", cudaGetErrorString(err));
+        return;
+    }
     cudaMemcpy(d_input, h_input, number * size * size * sizeof(double), cudaMemcpyHostToDevice);
 
     int *d_idx;
-    cudaMalloc(&d_idx, number * size * sizeof(int));
+    err = cudaMalloc(&d_idx, number * size * sizeof(int));
+    if (err != cudaSuccess) {
+        printf("Error allocating device memory for index array: %s\n", cudaGetErrorString(err));
+        cudaFree(d_input);
+        return;
+    }
 
 
     int blockSize = 1024;
@@ -90,11 +93,69 @@ void test_ludcmp(double *h_input, unsigned int number, unsigned int size) {
     cudaFree(d_idx);
 }
 
+__global__ void test_luminv_kernel(double *matrices, double *output, int *idx, unsigned int number, unsigned int size
+                                   #ifdef USE_MEMORY_POOL
+                                   , void *ptr
+                                   #endif
+                                   ) {
+    unsigned int index = blockIdx.x * blockDim.x + threadIdx.x;
+    if(index < number) {
+        for (unsigned int i = 0; i < 10000; i++) {
+            ludcmp(matrices + (index * size * size), idx + (index * size), size);
+            luminv(output + (index * size * size), matrices + (index * size * size), idx + (index * size), size);
+        }
+    }
+}
+
+void test_luminv(double *h_input, unsigned int number, unsigned int size) {
+    double *d_input;
+    cudaMalloc(&d_input, number * size * size * sizeof(double));
+    cudaMemcpy(d_input, h_input, number * size * size * sizeof(double), cudaMemcpyHostToDevice);
+
+    double *d_output;
+    cudaMalloc(&d_output, number * size * size * sizeof(double));
+
+    int *d_idx;
+    cudaMalloc(&d_idx, number * size * sizeof(int));
+
+    int blockSize = 1024;
+    int gridSize = (number + blockSize - 1) / blockSize;
+
+    #ifdef USE_MEMORY_POOL
+    void *poolMemoryBlock = allocatePools(number);
+    init_all_pools<<<gridSize, blockSize>>>(poolMemoryBlock, number);
+    cudaDeviceSynchronize();
+    #endif
+
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start);
+
+    #ifdef USE_MEMORY_POOL
+    test_luminv_kernel<<<gridSize, blockSize>>>(d_input, d_output, d_idx, number, size, poolMemoryBlock);
+    #else
+    test_luminv_kernel<<<gridSize, blockSize>>>(d_input, d_output, d_idx, number, size);
+    #endif
+    cudaDeviceSynchronize();
+
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    float milliseconds = 0;
+    cudaEventElapsedTime(&milliseconds, start, stop);
+
+    printf("%f\n", milliseconds);
+
+    cudaFree(d_input);
+    cudaFree(d_output);
+}
+
 int main(int argc, char **argv) {
     if(argc != 4) {
         printf("Usage: %s <function number> <number of matrices> <size of matrices>\n", argv[0]);
         printf("Function numbers:\n");
         printf("0: ludcmp\n");
+        printf("1: luminv\n");
         return 1;
     }
 
@@ -116,6 +177,8 @@ int main(int argc, char **argv) {
         case 0:
             test_ludcmp(h_input, number_of_matrices, size_of_matrices);
             break;
+        case 1:
+            test_luminv(h_input, number_of_matrices, size_of_matrices);
         default:
             printf("Invalid function number\n");
             free(h_input);
