@@ -8,6 +8,8 @@
 
 unsigned int global_blocksize;
 
+#define MATRIX_CALCULATION_REPEATS 100
+
 void cpu_generate_matrices(double *output, unsigned int number, unsigned int size) {
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -26,17 +28,13 @@ __global__ void init_all_pools(void *poolMemoryBlock, unsigned int number) {
     }
 }
 
-__global__ void test_ludcmp_kernel(double *matrices, int *results, unsigned int number, unsigned int size, double *buf 
-// __global__ void test_ludcmp_kernel(double *matrices, int *results, unsigned int number, unsigned int size
-                                   #ifdef USE_MEMORY_POOL
-                                   , void *ptr
-                                   #endif
-                                   ) {
+// __global__ void test_ludcmp_kernel(double *matrices, int *results, unsigned int number, unsigned int size, double *buf 
+__global__ void test_ludcmp_kernel(double *matrices, int *results, unsigned int number, unsigned int size) {
     unsigned int index = blockIdx.x * blockDim.x + threadIdx.x;
     if(index < number) {
-        for (unsigned int i = 0; i < 100; i++) {
-            // ludcmp(matrices + (index * size * size), results + (index * size), size);
-            ludcmp_buffered(matrices + (index * size * size), results + (index * size), size, buf + (index * size));
+        for (unsigned int i = 0; i < MATRIX_CALCULATION_REPEATS; i++) {
+            ludcmp(matrices + (index * size * size), results + (index * size), size);
+            // ludcmp_buffered(matrices + (index * size * size), results + (index * size), size, buf + (index * size));
         }
     }
 }
@@ -79,20 +77,17 @@ void test_ludcmp(double *h_input, unsigned int number, unsigned int size) {
     }
     #endif
     
-    double *buf;
-    cudaMalloc(&buf, number * size * sizeof(double));
+    // double *buf;
+    // cudaMalloc(&buf, number * size * sizeof(double));
 
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
     cudaEventRecord(start);
     
-    #ifdef USE_MEMORY_POOL
-    test_ludcmp_kernel<<<gridSize, blockSize>>>(d_input, d_idx, number, size, poolMemoryBlock);
-    #else
-    test_ludcmp_kernel<<<gridSize, blockSize>>>(d_input, d_idx, number, size, buf);
-    // test_ludcmp_kernel<<<gridSize, blockSize>>>(d_input, d_idx, number, size);
-    #endif
+    // test_ludcmp_kernel<<<gridSize, blockSize>>>(d_input, d_idx, number, size, buf);
+    test_ludcmp_kernel<<<gridSize, blockSize>>>(d_input, d_idx, number, size);
+
     err = cudaGetLastError();
     if (err != cudaSuccess) {
         printf("Kernel launch error: %s\n", cudaGetErrorString(err));
@@ -114,14 +109,10 @@ void test_ludcmp(double *h_input, unsigned int number, unsigned int size) {
     cudaFree(d_idx);
 }
 
-__global__ void test_luminv_kernel(double *matrices, double *output, int *idx, unsigned int number, unsigned int size
-                                   #ifdef USE_MEMORY_POOL
-                                   , void *ptr
-                                   #endif
-                                   ) {
+__global__ void test_luminv_kernel(double *matrices, double *output, int *idx, unsigned int number, unsigned int size) {
     unsigned int index = blockIdx.x * blockDim.x + threadIdx.x;
     if(index < number) {
-        for (unsigned int i = 0; i < 10000; i++) {
+        for (unsigned int i = 0; i < MATRIX_CALCULATION_REPEATS; i++) {
             ludcmp(matrices + (index * size * size), idx + (index * size), size);
             luminv(output + (index * size * size), matrices + (index * size * size), idx + (index * size), size);
         }
@@ -153,11 +144,8 @@ void test_luminv(double *h_input, unsigned int number, unsigned int size) {
     cudaEventCreate(&stop);
     cudaEventRecord(start);
 
-    #ifdef USE_MEMORY_POOL
-    test_luminv_kernel<<<gridSize, blockSize>>>(d_input, d_output, d_idx, number, size, poolMemoryBlock);
-    #else
     test_luminv_kernel<<<gridSize, blockSize>>>(d_input, d_output, d_idx, number, size);
-    #endif
+
     cudaDeviceSynchronize();
 
     cudaEventRecord(stop);
@@ -169,6 +157,53 @@ void test_luminv(double *h_input, unsigned int number, unsigned int size) {
 
     cudaFree(d_input);
     cudaFree(d_output);
+}
+
+__global__ test_leastsq_kernel(double *vectors, double *inputs, unsigned int number, unsigned int size) {
+    unsigned int index = blockIdx.x * blockDim.x + threadIdx.x;
+    if(index < number) {
+        for (unsigned int i = 0; i < MATRIX_CALCULATION_REPEATS; i++) {
+            leastsq(vectors + (index * size), inputs + (index * size * size), size);
+        }
+    }
+}
+
+void test_leastsq(double *h_matrices, unsigned int number, unsigned int size) {
+    // am lazy, generate size * size inputs, but only size will be used
+    double *h_vectors = (double *)malloc(number * size * size * sizeof(double));
+    cpu_generate_matrices(h_input, number, size);
+
+    double *d_vectors;
+    cudaMalloc(&d_vectors, number * size * sizeof(double));
+    cudaMemcpy(d_vectors, h_input, number * size * sizeof(double), cudaMemcpyHostToDevice);
+
+
+    int blockSize = 1024;
+    int gridSize = (number + blockSize - 1) / blockSize;
+
+    #ifdef USE_MEMORY_POOL
+    void *poolMemoryBlock = allocatePools(number);
+    init_all_pools<<<gridSize, blockSize>>>(poolMemoryBlock, number);
+    cudaDeviceSynchronize();
+    #endif
+
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start);
+
+    test_leastsq_kernel<<<gridSize, blockSize>>>(d_vectors, d_input, number, size);
+    cudaDeviceSynchronize();
+
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    float milliseconds = 0;
+    cudaEventElapsedTime(&milliseconds, start, stop);
+
+    printf("%f\n", milliseconds);
+
+    cudaFree(d_input);
+    cudaFree(d_vectors);
 }
 
 int main(int argc, char **argv) {
