@@ -159,11 +159,11 @@ void test_luminv(double *h_input, unsigned int number, unsigned int size) {
     cudaFree(d_output);
 }
 
-__global__ test_leastsq_kernel(double *vectors, double *inputs, unsigned int number, unsigned int size) {
+__global__ void test_leastsq_kernel(double *vectors, double *inputs, unsigned int number, unsigned int size) {
     unsigned int index = blockIdx.x * blockDim.x + threadIdx.x;
     if(index < number) {
         for (unsigned int i = 0; i < MATRIX_CALCULATION_REPEATS; i++) {
-            leastsq(vectors + (index * size), inputs + (index * size * size), size);
+            leastsq(vectors + (index * size), inputs + (index * size * size), size, size);
         }
     }
 }
@@ -171,11 +171,11 @@ __global__ test_leastsq_kernel(double *vectors, double *inputs, unsigned int num
 void test_leastsq(double *h_matrices, unsigned int number, unsigned int size) {
     // am lazy, generate size * size inputs, but only size will be used
     double *h_vectors = (double *)malloc(number * size * size * sizeof(double));
-    cpu_generate_matrices(h_input, number, size);
+    cpu_generate_matrices(h_vectors, number, size);
 
     double *d_vectors;
     cudaMalloc(&d_vectors, number * size * sizeof(double));
-    cudaMemcpy(d_vectors, h_input, number * size * sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_vectors, h_vectors, number * size * sizeof(double), cudaMemcpyHostToDevice);
 
 
     int blockSize = 1024;
@@ -192,7 +192,7 @@ void test_leastsq(double *h_matrices, unsigned int number, unsigned int size) {
     cudaEventCreate(&stop);
     cudaEventRecord(start);
 
-    test_leastsq_kernel<<<gridSize, blockSize>>>(d_vectors, d_input, number, size);
+    test_leastsq_kernel<<<gridSize, blockSize>>>(d_vectors, d_vectors, number, size);
     cudaDeviceSynchronize();
 
     cudaEventRecord(stop);
@@ -202,7 +202,7 @@ void test_leastsq(double *h_matrices, unsigned int number, unsigned int size) {
 
     printf("%f\n", milliseconds);
 
-    cudaFree(d_input);
+    cudaFree(d_vectors);
     cudaFree(d_vectors);
 }
 
