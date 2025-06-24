@@ -17,6 +17,7 @@ setup_cuda_test(fuzzy-test-gpu)
 setup_cuda_test(performance-test-gpu)
 
 setup_python_test_script(performance-test-py)
+setup_python_test_script(blocksize-test-py)
 
 # copy data file
 file(GLOB txtfiles *.txt)

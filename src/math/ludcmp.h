@@ -28,6 +28,10 @@ DISPATCH_MACRO int ludcmp(T *a, int *indx, int n) {
   int i, imax, j, k, d;
   T big, dum, sum, temp;
   T *vv = (T *)swappablemalloc(n * sizeof(T));
+  if (!vv) {
+    printf("Memory allocation failed in ludcmp\n");
+    return -1;
+  }
 
   d = 1;
   for (i = 0; i < n; i++) {

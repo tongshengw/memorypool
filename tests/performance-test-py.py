@@ -7,6 +7,7 @@ import os
 from typing import List, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
+import math
 
 def run_performance_test(num_matrices: int, matrix_size: int = 10, num_runs: int = 3) -> float:
     """
@@ -102,8 +103,10 @@ def main():
     
     # Define test parameters
     matrix_size = 10
-    # test_values = [10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000, 150000, 200000]
-    test_values = range(1000, 46001, 5000)  # Test with matrices from 10 to 1000 in steps of 10
+    # test_values = [int(pow(math.sqrt(10), i)) for i in range(1, 13)]
+    # test_values = range(10000, 1010001, 100000)
+    test_values = range(100, 50000, 500)
+
     
     print(f"Running performance tests with matrix size {matrix_size}x{matrix_size}")
     print("Testing with different numbers of matrices (3 runs each, averaged)...")

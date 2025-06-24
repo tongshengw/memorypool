@@ -209,7 +209,11 @@ __device__ static BlockHeader *getPrevBlockHeader(BlockHeader *header, unsigned 
 
 __host__ void *allocatePools(unsigned int numThreads) {
     char *allocatedBlock;
-    cudaMalloc(&allocatedBlock, GPU_MEM_POOL_SIZE * numThreads);
+    cudaError_t err = cudaMalloc(&allocatedBlock, GPU_MEM_POOL_SIZE * numThreads);
+    if (err != cudaSuccess) {
+        printf("Error allocating memory pool: %s\n", cudaGetErrorString(err));
+        return nullptr;
+    }
     return allocatedBlock;
 }
 

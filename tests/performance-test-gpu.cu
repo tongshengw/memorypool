@@ -6,6 +6,8 @@
 #include<memorypool/math/linalg.h>
 #include<memorypool/gpu/poolalloc.cuh>
 
+unsigned int global_blocksize;
+
 void cpu_generate_matrices(double *output, unsigned int number, unsigned int size) {
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -24,17 +26,17 @@ __global__ void init_all_pools(void *poolMemoryBlock, unsigned int number) {
     }
 }
 
-// __global__ void test_ludcmp_kernel(double *matrices, int *results, unsigned int number, unsigned int size, double *buf 
-__global__ void test_ludcmp_kernel(double *matrices, int *results, unsigned int number, unsigned int size
+__global__ void test_ludcmp_kernel(double *matrices, int *results, unsigned int number, unsigned int size, double *buf 
+// __global__ void test_ludcmp_kernel(double *matrices, int *results, unsigned int number, unsigned int size
                                    #ifdef USE_MEMORY_POOL
                                    , void *ptr
                                    #endif
                                    ) {
     unsigned int index = blockIdx.x * blockDim.x + threadIdx.x;
     if(index < number) {
-        for (unsigned int i = 0; i < 10000; i++) {
-            ludcmp(matrices + (index * size * size), results + (index * size), size);
-            // ludcmp_buffered(matrices + (index * size * size), results + (index * size), size, buf + (index * size));
+        for (unsigned int i = 0; i < 100; i++) {
+            // ludcmp(matrices + (index * size * size), results + (index * size), size);
+            ludcmp_buffered(matrices + (index * size * size), results + (index * size), size, buf + (index * size));
         }
     }
 }
@@ -62,12 +64,23 @@ void test_ludcmp(double *h_input, unsigned int number, unsigned int size) {
 
     #ifdef USE_MEMORY_POOL
     void *poolMemoryBlock = allocatePools(number);
+    if (poolMemoryBlock == nullptr) {
+        printf("Error allocating memory pool\n");
+        cudaFree(d_input);
+        cudaFree(d_idx);
+        return;
+    }
+    
     init_all_pools<<<gridSize, blockSize>>>(poolMemoryBlock, number);
     cudaDeviceSynchronize();
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        printf("init pools error: %s\n", cudaGetErrorString(err));
+    }
     #endif
     
-    // double *buf;
-    // cudaMalloc(&buf, number * size * sizeof(double));
+    double *buf;
+    cudaMalloc(&buf, number * size * sizeof(double));
 
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
@@ -77,10 +90,18 @@ void test_ludcmp(double *h_input, unsigned int number, unsigned int size) {
     #ifdef USE_MEMORY_POOL
     test_ludcmp_kernel<<<gridSize, blockSize>>>(d_input, d_idx, number, size, poolMemoryBlock);
     #else
-    // test_ludcmp_kernel<<<gridSize, blockSize>>>(d_input, d_idx, number, size, buf);
-    test_ludcmp_kernel<<<gridSize, blockSize>>>(d_input, d_idx, number, size);
+    test_ludcmp_kernel<<<gridSize, blockSize>>>(d_input, d_idx, number, size, buf);
+    // test_ludcmp_kernel<<<gridSize, blockSize>>>(d_input, d_idx, number, size);
     #endif
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        printf("Kernel launch error: %s\n", cudaGetErrorString(err));
+    }
     cudaDeviceSynchronize();
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        printf("Kernel run error: %s\n", cudaGetErrorString(err));
+    }
 
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
@@ -151,8 +172,8 @@ void test_luminv(double *h_input, unsigned int number, unsigned int size) {
 }
 
 int main(int argc, char **argv) {
-    if(argc != 4) {
-        printf("Usage: %s <function number> <number of matrices> <size of matrices>\n", argv[0]);
+    if(argc != 4 && argc != 5) {
+        printf("Usage: %s <function number> <number of matrices> <size of matrices> optional: <block size>\n", argv[0]);
         printf("Function numbers:\n");
         printf("0: ludcmp\n");
         printf("1: luminv\n");
@@ -162,6 +183,14 @@ int main(int argc, char **argv) {
     int function_number = atoi(argv[1]);
     unsigned int number_of_matrices = atoi(argv[2]);
     unsigned int size_of_matrices = atoi(argv[3]);
+    if (argc == 5) {
+        global_blocksize = atoi(argv[4]);
+    } else {
+        global_blocksize = 1024;
+    }
+    // int function_number = 0;
+    // unsigned int number_of_matrices = 100000;
+    // unsigned int size_of_matrices = 10;
 
     double *h_input = (double *)malloc(number_of_matrices * size_of_matrices * size_of_matrices * sizeof(double));
     cpu_generate_matrices(h_input, number_of_matrices, size_of_matrices);
@@ -172,6 +201,8 @@ int main(int argc, char **argv) {
     // #else
     // printf("Not using memory pool\n");
     // #endif
+    
+    cudaDeviceSetLimit(cudaLimitMallocHeapSize, 6 * 1024 * 1024 * 1024);
 
     switch(function_number) {
         case 0:
@@ -179,6 +210,7 @@ int main(int argc, char **argv) {
             break;
         case 1:
             test_luminv(h_input, number_of_matrices, size_of_matrices);
+            break;
         default:
             printf("Invalid function number\n");
             free(h_input);
