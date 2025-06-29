@@ -27,7 +27,7 @@ def run_performance_test(num_matrices: int, matrix_size: int = 10, num_runs: int
         try:
             # Run the performance test
             result = subprocess.run(
-                ['./performance-test-gpu.release', '1', str(num_matrices), str(matrix_size)],
+                ['./performance-test-gpu.release', '2', str(num_matrices), str(matrix_size)],
                 capture_output=True,
                 text=True,
                 check=True

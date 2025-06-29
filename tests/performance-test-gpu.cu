@@ -3,8 +3,9 @@
 #include<random>
 #include<cuda_runtime.h>
 #include<memorypool/alloc.h>
+
+// cannot be reorganised
 #include<memorypool/math/linalg.h>
-#include<memorypool/gpu/poolalloc.cuh>
 
 unsigned int global_blocksize;
 
@@ -172,11 +173,19 @@ void test_leastsq(double *h_matrices, unsigned int number, unsigned int size) {
     // am lazy, generate size * size inputs, but only size will be used
     double *h_vectors = (double *)malloc(number * size * size * sizeof(double));
     cpu_generate_matrices(h_vectors, number, size);
+    // for (unsigned int i = 0; i < number; i++) {
+    //     for (unsigned int j = 0; j < size; j++) {
+    //         h_vectors[i * size + j] = (double)(j);
+    //     }
+    // }
 
     double *d_vectors;
     cudaMalloc(&d_vectors, number * size * sizeof(double));
     cudaMemcpy(d_vectors, h_vectors, number * size * sizeof(double), cudaMemcpyHostToDevice);
-
+    
+    double *d_matrices;
+    cudaMalloc(&d_matrices, number * size * size * sizeof(double));
+    cudaMemcpy(d_matrices, h_matrices, number * size * size * sizeof(double), cudaMemcpyHostToDevice);
 
     int blockSize = 1024;
     int gridSize = (number + blockSize - 1) / blockSize;
@@ -192,7 +201,7 @@ void test_leastsq(double *h_matrices, unsigned int number, unsigned int size) {
     cudaEventCreate(&stop);
     cudaEventRecord(start);
 
-    test_leastsq_kernel<<<gridSize, blockSize>>>(d_vectors, d_vectors, number, size);
+    test_leastsq_kernel<<<gridSize, blockSize>>>(d_vectors, d_matrices, number, size);
     cudaDeviceSynchronize();
 
     cudaEventRecord(stop);
@@ -212,6 +221,7 @@ int main(int argc, char **argv) {
         printf("Function numbers:\n");
         printf("0: ludcmp\n");
         printf("1: luminv\n");
+        printf("2: leastsq\n");
         return 1;
     }
 
@@ -245,6 +255,9 @@ int main(int argc, char **argv) {
             break;
         case 1:
             test_luminv(h_input, number_of_matrices, size_of_matrices);
+            break;
+        case 2:
+            test_leastsq(h_input, number_of_matrices, size_of_matrices);
             break;
         default:
             printf("Invalid function number\n");
