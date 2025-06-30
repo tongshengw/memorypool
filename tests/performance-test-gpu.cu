@@ -22,12 +22,14 @@ void cpu_generate_matrices(double *output, unsigned int number, unsigned int siz
     }
 }
 
+#ifdef USE_MEMORY_POOL
 __global__ void init_all_pools(void *poolMemoryBlock, unsigned int number) {
     unsigned int threadInd = threadIdx.x + blockIdx.x * blockDim.x;
     if(threadInd < number) {
         poolinit(poolMemoryBlock, threadInd);
     }
 }
+#endif
 
 // __global__ void test_ludcmp_kernel(double *matrices, int *results, unsigned int number, unsigned int size, double *buf 
 __global__ void test_ludcmp_kernel(double *matrices, int *results, unsigned int number, unsigned int size) {
@@ -215,115 +217,170 @@ void test_leastsq(double *h_matrices, unsigned int number, unsigned int size) {
     cudaFree(d_vectors);
 }
 
-__global__ void test_leastsqkkt_kernel(void *d_b, void *d_a, void *d_c, void *d_d, int n1, int n2, int n3, int neq, int *max_iter) {
-    leastsq_kkt(d_b, d_a, d_c, d_d, n1, n2, n3, neq, max_iter);
+__global__ void test_leastsqkkt_kernel(double *d_b, double *d_a, double *d_c,
+                                       double *d_d, int n1, int n2, int n3,
+                                       int neq, int *max_iter,
+                                       unsigned int number) {
+    unsigned int index = blockIdx.x * blockDim.x + threadIdx.x;
+    if (index < number) {
+        if (index == 0) {
+            printf("%d\n", max_iter[index]);
+        }
+        int err = leastsq_kkt(d_b + (n1 * index), d_a, d_c, d_d, n1, n2, n3,
+                              neq, max_iter + (index));
+        if (err != 0) {
+            printf("Error in leastsq_kkt: %d\n", err);
+        }
+    }
 }
 
 void test_leastsqkkt(unsigned int number) {
-  // read X matrix from file, "X.txt"
-  // data size: 184x15
-  int n1 = 184; // number of rows
-  int n2 = 15; // number of columns
+    // read X matrix from file, "X.txt"
+    // data size: 184x15
+    int n1 = 184; // number of rows
+    int n2 = 15;  // number of columns
 
-  double *a = (double*)malloc(n1 * n2 * sizeof(double));
-  FILE *file_a = fopen("X.txt", "r");
-  if (file_a == NULL) {
-    fprintf(stderr, "Could not open file X.txt\n");
-    return;
-  }
-  for (int i = 0; i < n1 * n2; i++) {
-    if (fscanf(file_a, "%lf", &a[i]) != 1) {
-      fprintf(stderr, "Error reading data from file\n");
-      fclose(file_a);
-      return;
+    double *a = (double *)malloc(n1 * n2 * sizeof(double));
+    FILE *file_a = fopen("X.txt", "r");
+    if (file_a == NULL) {
+        fprintf(stderr, "Could not open file X.txt\n");
+        return;
     }
-  }
-  fclose(file_a);
-
-  double *b = (double*)malloc(n1 * sizeof(double));
-  FILE *file_b = fopen("Y.txt", "r");
-  if (file_b == NULL) {
-    fprintf(stderr, "Could not open file Y.txt\n");
-    return;
-  }
-  for (int i = 0; i < 184; i++) {
-    if (fscanf(file_b, "%lf", &b[i]) != 1) {
-      fprintf(stderr, "Error reading data from file Y.txt\n");
-      fclose(file_b);
-      return;
+    for (int i = 0; i < n1 * n2; i++) {
+        if (fscanf(file_a, "%lf", &a[i]) != 1) {
+            fprintf(stderr, "Error reading data from file\n");
+            fclose(file_a);
+            return;
+        }
     }
-  }
-  fclose(file_b);
+    fclose(file_a);
 
-  int neq = 1; // number of equality constraints
-  int n3 = neq + n2; // number of constraints
-  double *c = (double*)malloc(n3 * n2 * sizeof(double));
-
-  // first row: add up to 1.0
-  for (int i = 0; i < n2; i++) {
-    c[i] = 1.0; // equal weights
-  }
-
-  // negative identity matrix for the rest of the constraints
-  for (int i = neq; i < n3; i++) {
-    for (int j = 0; j < n2; j++) {
-      if (i - neq == j) {
-        c[i * n2 + j] = -1.0; // diagonal elements
-      } else {
-        c[i * n2 + j] = 0.0; // off-diagonal elements
-      }
+    double *b = (double *)malloc(n1 * sizeof(double));
+    FILE *file_b = fopen("Y.txt", "r");
+    if (file_b == NULL) {
+        fprintf(stderr, "Could not open file Y.txt\n");
+        return;
     }
-  }
+    for (int i = 0; i < 184; i++) {
+        if (fscanf(file_b, "%lf", &b[i]) != 1) {
+            fprintf(stderr, "Error reading data from file Y.txt\n");
+            fclose(file_b);
+            return;
+        }
+    }
+    fclose(file_b);
 
-  double *d = (double*)malloc(n3 * sizeof(double));
-  // first constraint: sum to 1.0
-  d[0] = 1.0;
-  // other constraints: set to 0.0
-  for (int i = neq; i < n3; i++) {
-    d[i] = 0.0;
-  }
+    int neq = 1;       // number of equality constraints
+    int n3 = neq + n2; // number of constraints
+    double *c = (double *)malloc(n3 * n2 * sizeof(double));
 
-  // print the constraint matrix c
-  // call leastsq_kkt
-  // copy b
-  double *b0 = (double*)malloc(n1 * sizeof(double));
-  memcpy(b0, b, n1 * sizeof(double));
+    // first row: add up to 1.0
+    for (int i = 0; i < n2; i++) {
+        c[i] = 1.0; // equal weights
+    }
 
-  // test solution
-  double b1[15] = {0.0784, 0.1049, 0.0383, 0.1059, 0.1002, 0.0880, 0.0682, 0.0139, 0.0139, 0.0139, 0.0491, 0.0699, 0.0733, 0.0139, 0.1680};
+    // negative identity matrix for the rest of the constraints
+    for (int i = neq; i < n3; i++) {
+        for (int j = 0; j < n2; j++) {
+            if (i - neq == j) {
+                c[i * n2 + j] = -1.0; // diagonal elements
+            } else {
+                c[i * n2 + j] = 0.0; // off-diagonal elements
+            }
+        }
+    }
 
-  int max_iter = 20;
-  
-  void *d_b, *d_a, *d_c, *d_d;
-  cudaMalloc(&d_b, n1 * sizeof(double));
-  cudaMalloc(&d_a, n1 * n2 * sizeof(double));
-  cudaMalloc(&d_c, n3 * n2 * sizeof(double));
-  cudaMalloc(&d_d, n3 * sizeof(double));
-  
-  cudaMemcpy(d_b, b, n1 * sizeof(double), cudaMemcpyHostToDevice);
-  cudaMemcpy(d_a, a, n1 * n2 * sizeof(double), cudaMemcpyHostToDevice);
-  cudaMemcpy(d_c, c, n3 * n2 * sizeof(double), cudaMemcpyHostToDevice);
-  cudaMemcpy(d_d, d, n3 * sizeof(double), cudaMemcpyHostToDevice);
-  
-  unsigned int blockSize = global_blocksize;
-  unsigned int gridSize = (n1 + blockSize - 1) / blockSize;
-  test_leastsqkkt_kernel<<<gridSize, blockSize>>>(d_b, d_a, d_c, d_d, n1, n2, n3, neq, &max_iter);
-  
-  cudaFree(d_b);
-  cudaFree(d_a);
-  cudaFree(d_c);
-  cudaFree(d_d);
+    double *d = (double *)malloc(n3 * sizeof(double));
+    // first constraint: sum to 1.0
+    d[0] = 1.0;
+    // other constraints: set to 0.0
+    for (int i = neq; i < n3; i++) {
+        d[i] = 0.0;
+    }
 
-  if (err != 0) {
-    fprintf(stderr, "Error in leastsq_kkt: %d\n", err);
-  }
+    // print the constraint matrix c
+    // call leastsq_kkt
+    // copy b
+    double *b0 = (double *)malloc(n1 * sizeof(double));
+    memcpy(b0, b, n1 * sizeof(double));
 
-  free(a);
-  free(b);
-  free(c);
-  free(d);
-  free(b0);
-  printf("\n");
+    // test solution
+    //   double b1[15] = {0.0784, 0.1049, 0.0383, 0.1059, 0.1002, 0.0880,
+    //   0.0682, 0.0139, 0.0139, 0.0139, 0.0491, 0.0699, 0.0733, 0.0139,
+    //   0.1680};
+
+    int max_iter = 20;
+
+    double *d_b, *d_a, *d_c, *d_d;
+    // b is the only one that is written to
+    cudaMalloc(&d_b, n1 * number * sizeof(double));
+
+    cudaMalloc(&d_a, n1 * n2 * sizeof(double));
+    cudaMalloc(&d_c, n3 * n2 * sizeof(double));
+    cudaMalloc(&d_d, n3 * sizeof(double));
+    
+    for (unsigned int i = 0; i < number; i++) {
+        // copy b to d_b
+        cudaMemcpy(d_b + (i * n1), b, n1 * sizeof(double),
+                   cudaMemcpyHostToDevice);
+    }
+
+    cudaMemcpy(d_a, a, n1 * n2 * sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_c, c, n3 * n2 * sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_d, d, n3 * sizeof(double), cudaMemcpyHostToDevice);
+    
+    int *d_max_iter;
+    cudaMalloc(&d_max_iter, number * sizeof(int));
+    for (unsigned int i = 0; i < number; i++) {
+        cudaMemcpy(d_max_iter + i, &max_iter, sizeof(int), cudaMemcpyHostToDevice);
+    }
+
+    unsigned int blockSize = global_blocksize;
+    unsigned int gridSize = (number + blockSize - 1) / blockSize;
+
+    printf("start\n");
+    fflush(stdout);
+    
+    printf("%lu %lu\n", blockSize, gridSize);
+    
+    #ifdef USE_MEMORY_POOL
+    void *poolMemoryBlock = allocatePools(number);
+    init_all_pools<<<gridSize, blockSize>>>(poolMemoryBlock, number);
+    cudaDeviceSynchronize();
+    #endif
+
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start);
+
+    test_leastsqkkt_kernel<<<gridSize, blockSize>>>(d_b, d_a, d_c, d_d, n1, n2,
+                                                    n3, neq, d_max_iter, number);
+    cudaDeviceSynchronize();
+    
+    cudaError_t err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        printf("Kernel launch error: %s\n", cudaGetErrorString(err));
+    }
+
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    float milliseconds = 0;
+    cudaEventElapsedTime(&milliseconds, start, stop);
+
+    printf("%f\n", milliseconds);
+
+    cudaFree(d_b);
+    cudaFree(d_a);
+    cudaFree(d_c);
+    cudaFree(d_d);
+    cudaFree(d_max_iter);
+
+    free(a);
+    free(b);
+    free(c);
+    free(d);
+    free(b0);
 }
 
 int main(int argc, char **argv) {
@@ -333,6 +390,7 @@ int main(int argc, char **argv) {
         printf("0: ludcmp\n");
         printf("1: luminv\n");
         printf("2: leastsq\n");
+        printf("3: leastsqkkt\n");
         return 1;
     }
 
@@ -369,6 +427,9 @@ int main(int argc, char **argv) {
             break;
         case 2:
             test_leastsq(h_input, number_of_matrices, size_of_matrices);
+            break;
+        case 3:
+            test_leastsqkkt(number_of_matrices);
             break;
         default:
             printf("Invalid function number\n");
