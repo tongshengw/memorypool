@@ -20,7 +20,7 @@
 // blockheader type to ensure first one is aligned
 // TODO: when switching to cuda, remove malloc() in poolinit function
 // using malloc because malloc aligns to 16 on my system
-// static BlockHeader memPool[(MEM_POOL_SIZE/sizeof(BlockHeader))+1];
+// static BlockHeader memPool[(GPU_MEM_POOL_SIZE/sizeof(BlockHeader))+1];
 
 // TODO: placeholder for now, might be able to reduce memory overhead
 __device__ MemoryPool g_memoryPools[MEM_MAX_THREADS];
@@ -42,7 +42,7 @@ __device__ static int debugListSize(BlockHeader *head) {
 
 __device__ static void assertNoSizeOverflow(BlockHeader *head) {
     while (head) {
-        assert(head->size < MEM_POOL_SIZE);
+        assert(head->size < GPU_MEM_POOL_SIZE);
         head = head->next;
     }
 }
@@ -186,7 +186,7 @@ __device__ static BlockHeader *getNextBlockHeader(BlockHeader *header, unsigned 
     char *memPool = g_memoryPools[threadInd].memPool;
     int headerOffset = (char *)header - (char *)memPool;
     if (headerOffset + sizeof(BlockHeader) + header->size +
-            getFooterAlignedSize() >= MEM_POOL_SIZE) {
+            getFooterAlignedSize() >= GPU_MEM_POOL_SIZE) {
         return NULL;
     }
 
@@ -209,7 +209,11 @@ __device__ static BlockHeader *getPrevBlockHeader(BlockHeader *header, unsigned 
 
 __host__ void *allocatePools(unsigned int numThreads) {
     char *allocatedBlock;
-    cudaMalloc(&allocatedBlock, MEM_POOL_SIZE * numThreads);
+    cudaError_t err = cudaMalloc(&allocatedBlock, GPU_MEM_POOL_SIZE * numThreads);
+    if (err != cudaSuccess) {
+        printf("Error allocating memory pool: %s\n", cudaGetErrorString(err));
+        return nullptr;
+    }
     return allocatedBlock;
 }
 
@@ -218,14 +222,14 @@ __host__ void freePools(void *ptr) {
 }
 
 __device__ void poolinit(void *poolBlockPtr, unsigned int threadInd) {
-    g_memoryPools[threadInd].memPool = (char *)poolBlockPtr + (threadInd * MEM_POOL_SIZE);
+    g_memoryPools[threadInd].memPool = (char *)poolBlockPtr + (threadInd * GPU_MEM_POOL_SIZE);
     char *memPool = g_memoryPools[threadInd].memPool;
     BlockHeader *&freeList = g_memoryPools[threadInd].freeList;
 
     BlockHeader *header = (BlockHeader *)memPool;
     // create a block that fills entire pool
     unsigned long dataSize =
-        MEM_POOL_SIZE - sizeof(BlockHeader) -
+        GPU_MEM_POOL_SIZE - sizeof(BlockHeader) -
         getFooterAlignedSize();
     unsigned long dataSizeAligned = dataSize - dataSize % 16;
     header->size = dataSizeAligned;
@@ -444,7 +448,7 @@ __device__ void printlayout() {
 
     printf("THREAD %d:\n", threadInd);
     printf("Memory Layout (total size %d), size not incl headers:\n",
-           MEM_POOL_SIZE);
+           GPU_MEM_POOL_SIZE);
     printf("free: |");
     for (int i = 0; i < numHeaders; i++) {
         if (headers[i]->free) {
@@ -481,9 +485,9 @@ __device__ void printbytes() {
     unsigned int threadInd = blockIdx.x * blockDim.x + threadIdx.x;
     char *memPool = g_memoryPools[threadInd].memPool;
     printf("\nBytes:\n");
-    for (size_t i = 0; i < MEM_POOL_SIZE; i++) {
+    for (size_t i = 0; i < GPU_MEM_POOL_SIZE; i++) {
         printf("%02X", memPool[i]);
-        if (i < MEM_POOL_SIZE - 1) {
+        if (i < GPU_MEM_POOL_SIZE - 1) {
             printf(" ");
         }
     }
