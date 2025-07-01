@@ -133,7 +133,7 @@ void test_luminv(double *h_input, unsigned int number, unsigned int size) {
     int *d_idx;
     cudaMalloc(&d_idx, number * size * sizeof(int));
 
-    int blockSize = 1024;
+    int blockSize = 512;
     int gridSize = (number + blockSize - 1) / blockSize;
 
     #ifdef USE_MEMORY_POOL
@@ -223,9 +223,6 @@ __global__ void test_leastsqkkt_kernel(double *d_b, double *d_a, double *d_c,
                                        unsigned int number) {
     unsigned int index = blockIdx.x * blockDim.x + threadIdx.x;
     if (index < number) {
-        if (index == 0) {
-            printf("%d\n", max_iter[index]);
-        }
         int err = leastsq_kkt(d_b + (n1 * index), d_a, d_c, d_d, n1, n2, n3,
                               neq, max_iter + (index));
         if (err != 0) {
@@ -335,14 +332,9 @@ void test_leastsqkkt(unsigned int number) {
         cudaMemcpy(d_max_iter + i, &max_iter, sizeof(int), cudaMemcpyHostToDevice);
     }
 
-    unsigned int blockSize = global_blocksize;
+    unsigned int blockSize = 512;
     unsigned int gridSize = (number + blockSize - 1) / blockSize;
 
-    printf("start\n");
-    fflush(stdout);
-    
-    printf("%lu %lu\n", blockSize, gridSize);
-    
     #ifdef USE_MEMORY_POOL
     void *poolMemoryBlock = allocatePools(number);
     init_all_pools<<<gridSize, blockSize>>>(poolMemoryBlock, number);
