@@ -62,7 +62,7 @@ endif()
 LIST(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/)
 
 # load all macros
-file(GLOB _macro_files "${CMAKE_SOURCE_DIR}/cmake/macros/*.cmake")
+file(GLOB _macro_files "${CMAKE_CURRENT_SOURCE_DIR}/cmake/macros/*.cmake")
 foreach(_file ${_macro_files})
   message(STATUS "Include ${_file}")
   include(${_file})
@@ -74,10 +74,10 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
 message(STATUS "${Blue}${PROJECT_NAME}-1. Set up project compiler flags ...${ColorReset}")
 message(STATUS "Include ${CMAKE_CURRENT_SOURCE_DIR}/cmake/compilers.cmake")
-include(${CMAKE_SOURCE_DIR}/cmake/compilers.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/compilers.cmake)
 
 message(STATUS "${Blue}${PROJECT_NAME}-2. Setting up project parameters ...${ColorReset}")
-include(${CMAKE_SOURCE_DIR}/cmake/parameters.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/parameters.cmake)
 
 message(STATUS "${Blue}${PROJECT_NAME}-3. Setting up system libraries ...${ColorReset}")
 find_package(Torch REQUIRED)
@@ -97,7 +97,7 @@ file(READ "${CMAKE_CURRENT_SOURCE_DIR}/python/VERSION" PROJECT_VERSION)
 string(STRIP "${PROJECT_VERSION}" PROJECT_VERSION)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/version.h.in
                ${CMAKE_CURRENT_SOURCE_DIR}/src/version.h @ONLY)
-configure_file(${CMAKE_SOURCE_DIR}/configure.h.in configure.h @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.in configure.h @ONLY)
 add_subdirectory(src)
 
 if (BUILD_TESTS)
