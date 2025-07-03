@@ -6,7 +6,7 @@ string(TOLOWER ${CMAKE_BUILD_TYPE} buildl)
 string(TOUPPER ${CMAKE_BUILD_TYPE} buildu)
 string(TOUPPER ${PROJECT_NAME} projectu)
 
-macro(setup_test namel)
+macro(memorypool_setup_test namel)
   add_executable(${namel}.${buildl} ${namel}.cpp)
 
   set_target_properties(
