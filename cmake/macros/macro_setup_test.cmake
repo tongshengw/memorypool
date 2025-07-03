@@ -1,6 +1,6 @@
 # A small macro used for setting up the build of a test.
 #
-# Usage: setup_test(name)
+# Usage: memorypool_setup_test(name)
 
 string(TOLOWER ${CMAKE_BUILD_TYPE} buildl)
 string(TOUPPER ${CMAKE_BUILD_TYPE} buildu)

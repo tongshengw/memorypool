@@ -5,10 +5,10 @@
 enable_testing()
 
 # C++ tests
-setup_test(demo)
-#setup_test(fuzzy-test)
-setup_test(linalg-test)
-setup_test(volume-test)
+memorypool_setup_test(demo)
+#memorypool_setup_test(fuzzy-test)
+memorypool_setup_test(linalg-test)
+memorypool_setup_test(volume-test)
 
 # cuda tests
 setup_cuda_test(test-cuda)
