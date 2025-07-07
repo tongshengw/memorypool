@@ -1,5 +1,5 @@
 add_library(poolalloc-cpu STATIC poolalloc.c poolalloc.h)
-target_include_directories(poolalloc-cpu PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(poolalloc-cpu PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 target_link_libraries(poolalloc-cpu PUBLIC m)
 
 add_executable(fuzzy-cpu fuzzy-test.c)
