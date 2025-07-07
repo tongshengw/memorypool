@@ -18,6 +18,9 @@ __device__ void test_ludcmp()
   int n = 2;
   int d = ludcmp(a, indx, n);
   
+  if (!(d == -1)) {
+    printf("fail\n");
+  }
   assert(d == -1);
 
   // printf("LU decomposition: d = %d\n", d);
@@ -66,7 +69,13 @@ __device__ void test_lubksb()
   // }
   // printf("\n");
   
+  if (!(b[0] == 1.0)) {
+    printf("fail\n");
+  }
   assert(b[0] == 1.0);
+  if (!(b[1] == 2.0)) {
+    printf("fail\n");
+  }
   assert(b[1] == 2.0);
 }
 
@@ -99,6 +108,9 @@ __device__ void test_luminv()
   // printf("\n");
   double expected[4] = { -2.0, 1.0, 1.5, -0.5 };
   for (int i = 0; i < n * n; i++) {
+    if (!(fabs(y[i] - expected[i]) < 1e-6)) {
+      printf("fail\n");
+    }
     assert(fabs(y[i] - expected[i]) < 1e-6);
   }
 
@@ -135,6 +147,9 @@ __device__ void test_leastsq()
   
   double expected[2] = { -6.0, 6.5 };
   for (int i = 0; i < n2; i++) {
+    if (!(fabs(b[i] - expected[i]) < 1e-6)) {
+      printf("fail\n");
+    }
     assert(fabs(b[i] - expected[i]) < 1e-6);
   }
 
@@ -195,7 +210,13 @@ __device__ void test_leastsq_kkt()
   
   double expected[2] = { -5.285714, 6.0 };
   for (int i = 0; i < n2; i++) {
+    if (!(fabs(b[i] - expected[i]) < 0.0001)) {
+      printf("fail\n");
+    }
     assert(fabs(b[i] - expected[i]) < 0.0001);
+  }
+  if (!(max_iter == 1)) {
+    printf("fail\n");
   }
   assert(max_iter == 1);
 }
