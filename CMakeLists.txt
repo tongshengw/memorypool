@@ -97,7 +97,8 @@ file(READ "${CMAKE_CURRENT_SOURCE_DIR}/python/VERSION" PROJECT_VERSION)
 string(STRIP "${PROJECT_VERSION}" PROJECT_VERSION)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/version.h.in
                ${CMAKE_CURRENT_SOURCE_DIR}/src/version.h @ONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.in configure.h @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.in 
+${CMAKE_CURRENT_SOURCE_DIR}/configure.h @ONLY)
 add_subdirectory(src)
 
 if (BUILD_TESTS)
