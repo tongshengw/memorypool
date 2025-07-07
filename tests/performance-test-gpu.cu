@@ -408,7 +408,8 @@ int main(int argc, char **argv) {
     // printf("Not using memory pool\n");
     // #endif
     
-    cudaDeviceSetLimit(cudaLimitMallocHeapSize, 6 * 1024 * 1024 * 1024);
+    unsigned int limit = (unsigned int)6 * 1024 * 1024 * 1024;
+    cudaDeviceSetLimit(cudaLimitMallocHeapSize, limit);
 
     switch(function_number) {
         case 0:
