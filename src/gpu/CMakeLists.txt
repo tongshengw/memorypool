@@ -1,5 +1,5 @@
 set(CMAKE_CUDA_STANDARD 17)
-set(CMAKE_CUDA_ARCHITECTURES "86")
+set(CMAKE_CUDA_ARCHITECTURES 61 86 89)
 
 add_library(poolalloc-gpu STATIC poolalloc.cu)
 target_link_libraries(poolalloc-gpu PUBLIC ${CUDA_LIBRARIES})
