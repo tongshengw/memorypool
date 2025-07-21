@@ -82,6 +82,12 @@ if (CUDAToolkit_FOUND)
       $<IF:$<BOOL:${CUDAToolkit_FOUND}>,CUDA::cudart_static,>
       )
 
+  target_include_directories(${namel}_cuda_${buildl}
+      PUBLIC
+      ${CMAKE_CURRENT_SOURCE_DIR}/gpu
+      )
+
+
   add_library(${namel}::${namel}_cu ALIAS ${namel}_cuda_${buildl})
 endif()
 
