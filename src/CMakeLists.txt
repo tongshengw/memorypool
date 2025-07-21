@@ -84,7 +84,7 @@ if (CUDAToolkit_FOUND)
 
   target_include_directories(${namel}_cuda_${buildl}
       PUBLIC
-      ${CMAKE_CURRENT_SOURCE_DIR}/gpu
+      ${CMAKE_CURRENT_SOURCE_DIR}
       )
 
 
