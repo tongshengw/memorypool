@@ -15,7 +15,7 @@
   #define swappablefree(ptr)    poolfree(ptr)
 
 #else
-  #define swappablecalloc(count, size) calloc(count, size)
+  #define swappablecalloc(count, size) callocwrapper(count, size)
 
   #define swappablemalloc(size) malloc(size)
   #define swappablefree(ptr)    free(ptr)

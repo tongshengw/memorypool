@@ -27,6 +27,8 @@ __device__ void poolinit(void *poolBlockPtr, unsigned int threadInd);
 
 __device__ void *poolcalloc(unsigned long count, unsigned long size);
 
+__device__ void *callocwrapper(unsigned long count, unsigned long size);
+
 __device__ void *poolmalloc(unsigned long size);
 
 __device__ void poolfree(void *ptr);
