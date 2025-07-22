@@ -15,7 +15,13 @@
   #define swappablefree(ptr)    poolfree(ptr)
 
 #else
-  #define swappablecalloc(count, size) callocwrapper(count, size)
+  #ifdef __CUDACC__
+    #include <memorypool/gpu/poolalloc.cuh>
+    #define swappablecalloc(count, size) callocwrapper(count, size)
+  #else
+    #define swappablecalloc(count, size) calloc(count, size)
+  #endif
+
 
   #define swappablemalloc(size) malloc(size)
   #define swappablefree(ptr)    free(ptr)
